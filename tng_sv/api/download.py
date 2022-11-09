@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 from tng_sv.api import BASEURL
 from tng_sv.api.utils import get_file, get_index, get_json, get_json_list
-from tng_sv.data import DATADIR
+from tng_sv.data.dir import get_snapshot_index_path
 
 
 def download_snapshot(simulation_name: str, snapshot_idx: int) -> List[str]:
@@ -22,9 +22,7 @@ def download_snapshot(simulation_name: str, snapshot_idx: int) -> List[str]:
     snapshot = get_json(snapshot_url)
     files_meta = get_json(snapshot["files"]["snapshot"])["files"]
 
-    pre_dir = f"{simulation_name}/{snapshot_idx:03d}/"
-
-    _dir = DATADIR.joinpath(pre_dir)
+    _dir = get_snapshot_index_path(simulation_name, snapshot_idx)
     if not _dir.exists():
         os.makedirs(_dir)
 
