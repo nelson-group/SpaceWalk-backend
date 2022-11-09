@@ -21,12 +21,17 @@ def combine_snapshot(simulation_name: str, snapshot_idx: int) -> Path:
 
     for file_name in file_names:
         with h5py.File(file_name, "r") as f_in:
-            coordinates = np.concatenate((coordinates, f_in["PartType0"]["Coordinates"]), axis=0)
-            velocities = np.concatenate((velocities, f_in["PartType0"]["Velocities"]), axis=0)
+            try:
+                coordinates = np.concatenate((coordinates, f_in["PartType0"]["Coordinates"]), axis=0)
+                velocities = np.concatenate((velocities, f_in["PartType0"]["Velocities"]), axis=0)
+            except KeyError:
+                continue
 
-    f_out = h5py.File(_dir.joinpath(f"combined_{simulation_name}.hdf5"), "w")
+    f_out = h5py.File(_dir.joinpath(f"combined_{simulation_name.lower()}.hdf5"), "w")
     f_out.create_group("PartType0")
     f_out["PartType0"].create_dataset("Coordinates", coordinates.shape, float, coordinates)
     f_out["PartType0"].create_dataset("Velocities", velocities.shape, float, velocities)
+
+    file_name = Path(f_out.filename)
     f_out.close()
-    return Path(f_out.filename)
+    return file_name
