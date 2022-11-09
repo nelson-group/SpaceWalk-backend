@@ -1,0 +1,62 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = [
+    "setuptools >=65.0.0",
+    "setuptools-scm",
+]
+
+[project]
+name = "tng_sv"
+description = "tng sv"
+requires-python = ">=3.7"
+# version = "0.0.1"
+dynamic = ["version"]
+dependencies = [
+    "typer",
+    "requests",
+    "tqdm",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-xdist",
+    "pytest-sugar",
+]
+dev = [
+    "flake8",
+    "pylint",
+    "black",
+    "mypy",
+    "pre-commit",
+    "types-requests",
+    "types-tqdm",
+]
+
+[project.scripts]
+tng-sv-cli = "tng_sv.cli:cli"
+
+[tool.black]
+line-length= 120
+target-version = ['py37']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+
+  # The following are specific to Black, you probably don't want those.
+  | blib2to3
+  | tests/data
+)/
+'''
+
+[tool.pylint]
+max-line-length = 120
