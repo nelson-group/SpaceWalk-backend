@@ -28,9 +28,10 @@ def delaunay(simulation_name: str = "TNG50-4-Subbox2", snapshot_idx: int = 0) ->
     run_delaunay(simulation_name, snapshot_idx)
 
 
-def cli() -> None:
+def cli() -> int:
     """Run the main function with typer."""
     app()
+    return 0
 
 
 if __name__ == "__main__":
