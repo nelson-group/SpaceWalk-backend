@@ -1,7 +1,7 @@
 """Information about preprocessing."""
 
 
-from tng_sv.data.dir import get_snapshot_combination_index_path
+from tng_sv.data.dir import get_delaunay_path, get_snapshot_combination_index_path
 
 
 def assert_pvpython(func):
@@ -66,7 +66,42 @@ def run_delaunay(simulation_name: str, snapshot_idx: int) -> None:
     delaunay3d.SetOffset(2.5)
     delaunay3d.SetTolerance(0.001)
 
-    writer = vtk.vtkUnstructuredGridWriter()
+    writer = vtk.vtkXMLUnstructuredGridWriter()
     writer.SetInputConnection(delaunay3d.GetOutputPort(0))
     writer.SetFileName(str(path).replace(".hdf5", "_delaunay.pvd"))
+    writer.Write()
+
+
+@assert_pvpython
+def run_resample_delaunay(simulation_name: str, snapshot_idx: int) -> None:
+    """Run resample on delaunay input data."""
+    # pylint: disable=import-error,import-outside-toplevel
+    path = get_delaunay_path(simulation_name, snapshot_idx)
+
+    import vtk
+    from vtkmodules.vtkFiltersCore import vtkResampleToImage
+
+    # create a new vtkPVDReader
+    # delaunay_pvd = vtkPVDReader()
+    delaunay_pvd = vtk.vtkXMLUnstructuredGridReader()
+    delaunay_pvd.SetFileName(path)
+    delaunay_pvd.SetPointArrayStatus("velocity", 1)
+
+    # create a new vtkResampleToImage
+    resample_to_image = vtkResampleToImage()
+    resample_to_image.SetInputConnection(0, delaunay_pvd.GetOutputPort(0))
+    resample_to_image.SetSamplingBounds(
+        4800.045737701259,
+        9799.955502248535,
+        22000.00873616014,
+        26999.97518430174,
+        19000.00712338154,
+        23999.983433255224,
+    )
+    resample_to_image.SetSamplingDimensions(100, 100, 100)
+    resample_to_image.SetUseInputBounds(True)
+
+    writer = vtk.vtkXMLImageDataWriter()
+    writer.SetInputConnection(resample_to_image.GetOutputPort(0))
+    writer.SetFileName(str(path).replace("delaunay.pvd", "resampled_delaunay.pvd"))
     writer.Write()

@@ -13,17 +13,28 @@ from tng_sv.data.dir import get_snapshot_index_path
 
 def download_snapshot(simulation_name: str, snapshot_idx: int) -> List[str]:
     """Download a specific snapshot."""
-
     simulations: List[Dict[str, Any]] = get_json(BASEURL)["simulations"]
     _, simulation_meta = get_index(simulations, "name", simulation_name)
     simulation = get_json(simulation_meta["url"])
     snapshots: List[Dict[str, Any]] = get_json_list(simulation["snapshots"])
+
     snapshot_url = snapshots[snapshot_idx]["url"]
+    number = snapshots[snapshot_idx]["number"]
+    assert snapshot_idx == number, ValueError("idx doesn't match snapshot number")
+
     snapshot = get_json(snapshot_url)
     files_meta = get_json(snapshot["files"]["snapshot"])["files"]
 
-    _dir = get_snapshot_index_path(simulation_name, snapshot_idx)
+    _dir = get_snapshot_index_path(simulation_name, number)
     if not _dir.exists():
         os.makedirs(_dir)
 
     return [get_file(file_url, pre_dir=_dir) for file_url in tqdm(files_meta)]
+
+
+def get_snapshot_amount(simulation_name: str) -> int:
+    """Get the number of snapshots for a given simulation_name."""
+    simulations: List[Dict[str, Any]] = get_json(BASEURL)["simulations"]
+    _, simulation_meta = get_index(simulations, "name", simulation_name)
+    simulation = get_json(simulation_meta["url"])
+    return len(get_json_list(simulation["snapshots"]))
