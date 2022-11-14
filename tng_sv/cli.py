@@ -51,7 +51,7 @@ def run(simulation_name: str = "TNG50-4-Subbox2") -> None:
 def _run(simulation: Tuple[str, int]) -> None:
     """Do things, exit early if already done."""
     simulation_name, snapshot_idx = simulation
-    if path_to_resampled_file(simulation_name, snapshot_idx) is not None:
+    if path_to_resampled_file(simulation_name, snapshot_idx) is None:
         download_snapshot(simulation_name, snapshot_idx)
         combine_snapshot(simulation_name, snapshot_idx)
         run_delaunay(simulation_name, snapshot_idx)
