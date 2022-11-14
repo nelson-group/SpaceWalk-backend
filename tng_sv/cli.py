@@ -5,6 +5,7 @@ import typer
 
 from tng_sv.api.download import download_snapshot
 from tng_sv.data.utils import combine_snapshot
+from tng_sv.preprocessing import run_delaunay
 
 app = typer.Typer()
 
@@ -19,6 +20,12 @@ def download(simulation_name: str = "TNG50-4-Subbox2", snapshot_idx: int = 0) ->
 def combine(simulation_name: str = "TNG50-4-Subbox2", snapshot_idx: int = 0) -> None:
     """Combine a snapshot."""
     combine_snapshot(simulation_name, snapshot_idx)
+
+
+@app.command()
+def delaunay(simulation_name: str = "TNG50-4-Subbox2", snapshot_idx: int = 0) -> None:
+    """Download a snapshot."""
+    run_delaunay(simulation_name, snapshot_idx)
 
 
 def cli() -> None:
