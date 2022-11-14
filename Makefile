@@ -5,5 +5,9 @@ venv:
 
 clean:
 	-rm -rf venv
+	-rm -rf build
+	-rm -rf dist
 
-
+.PHONY: build
+build:
+	python -m build --wheel
