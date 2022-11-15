@@ -5,6 +5,7 @@ import os
 from concurrent.futures import ProcessPoolExecutor
 from typing import Tuple
 
+import numpy as np
 import typer
 
 from tng_sv.api.download import download_snapshot, get_snapshot_amount
@@ -40,10 +41,15 @@ def resample(simulation_name: str = "TNG50-4-Subbox2", snapshot_idx: int = 0) ->
 
 
 @app.command()
-def run(simulation_name: str = "TNG50-4-Subbox2") -> None:
+def run(simulation_name: str = "TNG50-4-Subbox2", snapshot_idx_step_size: int = 100) -> None:
     """Run the whole pipeline."""
     amount = get_snapshot_amount(simulation_name)
-    args = [(simulation_name, i) for i in range(amount)]
+    _range = np.arange(0, amount, snapshot_idx_step_size)
+
+    if _range[-1] != amount:
+        _range = np.append(_range, amount)
+
+    args = [(simulation_name, i) for i in _range]
     with ProcessPoolExecutor(max_workers=os.cpu_count()) as pool:
         pool.map(_run, args)
 
