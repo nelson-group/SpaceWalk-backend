@@ -1,11 +1,12 @@
 """Utilities to operate on data."""
 
+import os
 from pathlib import Path
 
 import h5py
 import numpy as np
 
-from tng_sv.data.dir import get_snapshot_index_path
+from tng_sv.data.dir import get_delaunay_path, get_delaunay_time_symlink_path, get_snapshot_index_path
 
 
 def combine_snapshot(simulation_name: str, snapshot_idx: int) -> Path:
@@ -35,3 +36,10 @@ def combine_snapshot(simulation_name: str, snapshot_idx: int) -> Path:
     file_name = Path(f_out.filename)
     f_out.close()
     return file_name
+
+
+def create_delaunay_symlink(simulation_name: str, snapshot_idx: int) -> None:
+    """Create symlink for combined delauny for loading of timed data."""
+    os.symlink(
+        get_delaunay_path(simulation_name, snapshot_idx), get_delaunay_time_symlink_path(simulation_name, snapshot_idx)
+    )

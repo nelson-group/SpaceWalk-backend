@@ -2,6 +2,7 @@
 
 import contextlib
 import glob
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -31,3 +32,12 @@ def path_to_resampled_file(simulation_name: str, snapshot_idx: int) -> Optional[
     with contextlib.suppress(IndexError):
         return Path(glob.glob(f"{_dir}/combined*_resampled_delaunay.pvd")[0])
     return None
+
+
+def get_delaunay_time_symlink_path(simulation_name: str, snapshot_idx: int) -> Path:
+    """Get the path to a symlink target for a specific time of a  delaunay."""
+    _dir = DATADIR.joinpath(f"{simulation_name}/delaunay_time_data/")
+    if not _dir.exists():
+        os.makedirs(_dir)
+
+    return _dir.joinpath(f"resampled_delaunay.{snapshot_idx:03d}.pvd")

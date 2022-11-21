@@ -9,8 +9,8 @@ import numpy as np
 import typer
 
 from tng_sv.api.download import download_snapshot, get_snapshot_amount
-from tng_sv.data.dir import path_to_resampled_file
-from tng_sv.data.utils import combine_snapshot
+from tng_sv.data.dir import get_delaunay_time_symlink_path, path_to_resampled_file
+from tng_sv.data.utils import combine_snapshot, create_delaunay_symlink
 from tng_sv.preprocessing import run_delaunay, run_resample_delaunay
 
 app = typer.Typer()
@@ -62,6 +62,9 @@ def _run(simulation: Tuple[str, int]) -> None:
         combine_snapshot(simulation_name, snapshot_idx)
         run_delaunay(simulation_name, snapshot_idx)
         resample(simulation_name, snapshot_idx)
+
+    if not get_delaunay_time_symlink_path(simulation_name, snapshot_idx).exists():
+        create_delaunay_symlink(simulation_name, snapshot_idx)
 
 
 def cli() -> int:
