@@ -2,6 +2,7 @@
 
 
 from tng_sv.data.dir import get_delaunay_path, get_snapshot_combination_index_path
+from tng_sv.data.field_type import FieldType
 
 
 def assert_pvpython(func):
@@ -16,10 +17,10 @@ def assert_pvpython(func):
 
 
 @assert_pvpython
-def run_delaunay(simulation_name: str, snapshot_idx: int) -> None:
+def run_delaunay(simulation_name: str, snapshot_idx: int, field_type: FieldType) -> None:
     """Run delaunay."""
     # pylint: disable=import-error,import-outside-toplevel
-    path = get_snapshot_combination_index_path(simulation_name, snapshot_idx)
+    path = get_snapshot_combination_index_path(simulation_name, snapshot_idx, field_type)
 
     # Lazy import to prevent failing in non pvpython environment
     import vtk
@@ -45,11 +46,11 @@ def run_delaunay(simulation_name: str, snapshot_idx: int) -> None:
         X = f['PartType0']['Coordinates'][:, 0]
         Y = f['PartType0']['Coordinates'][:, 1]
         Z = f['PartType0']['Coordinates'][:, 2]
-        velocity = f['PartType0']['Velocities'][:]
+        values = f['PartType0']["{field_type.value}"][:]
 
         coordinates = algs.make_vector(X.ravel(), Y.ravel(), Z.ravel())
         output.Points = coordinates
-        output.PointData.append(velocity, 'velocity')
+        output.PointData.append(values, "{field_type.value}")
         f.close()
         """
     )
@@ -73,10 +74,10 @@ def run_delaunay(simulation_name: str, snapshot_idx: int) -> None:
 
 
 @assert_pvpython
-def run_resample_delaunay(simulation_name: str, snapshot_idx: int) -> None:
+def run_resample_delaunay(simulation_name: str, snapshot_idx: int, field_type: FieldType) -> None:
     """Run resample on delaunay input data."""
     # pylint: disable=import-error,import-outside-toplevel
-    path = get_delaunay_path(simulation_name, snapshot_idx)
+    path = get_delaunay_path(simulation_name, snapshot_idx, field_type)
 
     import vtk
     from vtkmodules.vtkFiltersCore import vtkResampleToImage
@@ -85,7 +86,7 @@ def run_resample_delaunay(simulation_name: str, snapshot_idx: int) -> None:
     # delaunay_pvd = vtkPVDReader()
     delaunay_pvd = vtk.vtkXMLUnstructuredGridReader()
     delaunay_pvd.SetFileName(path)
-    delaunay_pvd.SetPointArrayStatus("velocity", 1)
+    delaunay_pvd.SetPointArrayStatus(field_type.value, 1)
 
     # create a new vtkResampleToImage
     resample_to_image = vtkResampleToImage()

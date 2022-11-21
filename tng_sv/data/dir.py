@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Optional
 
 from tng_sv.data import DATADIR
+from tng_sv.data.field_type import FieldType
 
 
 def get_snapshot_index_path(simulation_name: str, snapshot_idx: int) -> Path:
@@ -14,30 +15,30 @@ def get_snapshot_index_path(simulation_name: str, snapshot_idx: int) -> Path:
     return DATADIR.joinpath(f"{simulation_name}/{snapshot_idx:03d}/")
 
 
-def get_snapshot_combination_index_path(simulation_name: str, snapshot_idx: int) -> Path:
+def get_snapshot_combination_index_path(simulation_name: str, snapshot_idx: int, field_type: FieldType) -> Path:
     """Return path to a combined simulation snapshot."""
     _dir = DATADIR.joinpath(f"{simulation_name}/{snapshot_idx:03d}/")
-    return Path(glob.glob(f"{_dir}/combined*.hdf5")[0])
+    return Path(glob.glob(f"{_dir}/combined_{field_type.value}*.hdf5")[0])
 
 
-def get_delaunay_path(simulation_name: str, snapshot_idx: int) -> Path:
+def get_delaunay_path(simulation_name: str, snapshot_idx: int, field_type: FieldType) -> Path:
     """Return path to the delaunay output file."""
     _dir = DATADIR.joinpath(f"{simulation_name}/{snapshot_idx:03d}/")
-    return Path(glob.glob(f"{_dir}/combined*_delaunay.pvd")[0])
+    return Path(glob.glob(f"{_dir}/combined_{field_type.value}*_delaunay.pvd")[0])
 
 
-def path_to_resampled_file(simulation_name: str, snapshot_idx: int) -> Optional[Path]:
+def path_to_resampled_file(simulation_name: str, snapshot_idx: int, field_type: FieldType) -> Optional[Path]:
     """Return path to the delaunay output file."""
     _dir = DATADIR.joinpath(f"{simulation_name}/{snapshot_idx:03d}/")
     with contextlib.suppress(IndexError):
-        return Path(glob.glob(f"{_dir}/combined*_resampled_delaunay.pvd")[0])
+        return Path(glob.glob(f"{_dir}/combined_{field_type.value}*_resampled_delaunay.pvd")[0])
     return None
 
 
-def get_delaunay_time_symlink_path(simulation_name: str, snapshot_idx: int) -> Path:
+def get_delaunay_time_symlink_path(simulation_name: str, snapshot_idx: int, field_type: FieldType) -> Path:
     """Get the path to a symlink target for a specific time of a  delaunay."""
-    _dir = DATADIR.joinpath(f"{simulation_name}/delaunay_time_data/")
+    _dir = DATADIR.joinpath(f"{simulation_name}/{field_type.value}_delaunay_time_data/")
     if not _dir.exists():
         os.makedirs(_dir)
 
-    return _dir.joinpath(f"resampled_delaunay.{snapshot_idx:03d}.pvd")
+    return _dir.joinpath(f"combined_{field_type.value}_resampled_delaunay.{snapshot_idx:03d}.pvd")
