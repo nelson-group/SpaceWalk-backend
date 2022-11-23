@@ -74,4 +74,4 @@ def vector_angle(simulation_name: str, snapshot_idx: int, field_type_1: FieldTyp
     # field_1 = _image_data_to_nd_array(field_1_image, field_type_1)
     # field_2 = _image_data_to_nd_array(field_2_image, field_type_2)
 
-    raise NotImplementedError("I know, I'm to slow :(")
+    raise NotImplementedError("I know, I'm too slow :(")
