@@ -67,7 +67,7 @@ def run(
     _range = np.arange(0, amount, snapshot_idx_step_size)
 
     if _range[-1] != amount:
-        _range = np.append(_range, amount)
+        _range = np.append(_range, amount - 1)
 
     args = [(simulation_name, i, field_type, download) for i in _range]
     with ProcessPoolExecutor(max_workers=os.cpu_count()) as pool:
