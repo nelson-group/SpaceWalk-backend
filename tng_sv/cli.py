@@ -33,7 +33,9 @@ def download_cmd(simulation_name: str = "TNG50-4-Subbox2", snapshot_idx: int = 0
 
 @app.command()
 def combine(
-    simulation_name: str = "TNG50-4-Subbox2", snapshot_idx: int = 0, field_type: FieldType = FieldType.VELOCITY
+    simulation_name: str = "TNG50-4-Subbox2",
+    snapshot_idx: int = 0,
+    field_type: FieldType = cast(FieldType, "Velocities"),
 ) -> None:
     """Combine a snapshot."""
     combine_snapshot(simulation_name, snapshot_idx, field_type)
@@ -41,7 +43,9 @@ def combine(
 
 @app.command()
 def delaunay(
-    simulation_name: str = "TNG50-4-Subbox2", snapshot_idx: int = 0, field_type: FieldType = FieldType.VELOCITY
+    simulation_name: str = "TNG50-4-Subbox2",
+    snapshot_idx: int = 0,
+    field_type: FieldType = cast(FieldType, "Velocities"),
 ) -> None:
     """Download a snapshot."""
     run_delaunay(simulation_name, snapshot_idx, field_type)
@@ -49,7 +53,9 @@ def delaunay(
 
 @app.command()
 def resample(
-    simulation_name: str = "TNG50-4-Subbox2", snapshot_idx: int = 0, field_type: FieldType = FieldType.VELOCITY
+    simulation_name: str = "TNG50-4-Subbox2",
+    snapshot_idx: int = 0,
+    field_type: FieldType = cast(FieldType, "Velocities"),
 ) -> None:
     """Download a snapshot."""
     run_resample_delaunay(simulation_name, snapshot_idx, field_type)
