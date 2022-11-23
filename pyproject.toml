@@ -18,6 +18,7 @@ dependencies = [
     "tqdm",
     "numpy",
     "h5py",
+    "vtk",
 ]
 
 [project.optional-dependencies]
