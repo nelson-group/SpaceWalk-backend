@@ -1,13 +1,22 @@
 """Utilities to operate on data."""
 
+import logging
 import os
 from pathlib import Path
 
 import h5py
 import numpy as np
 
-from tng_sv.data.dir import get_delaunay_path, get_delaunay_time_symlink_path, get_snapshot_index_path
+from tng_sv.data.dir import (
+    get_delaunay_path,
+    get_delaunay_time_symlink_path,
+    get_resampled_delaunay_time_symlink_path,
+    get_snapshot_index_path,
+    path_to_resampled_file,
+)
 from tng_sv.data.field_type import FieldType
+
+logger = logging.getLogger(__name__)
 
 
 def combine_snapshot(simulation_name: str, snapshot_idx: int, field_type: FieldType) -> Path:
@@ -44,4 +53,19 @@ def create_delaunay_symlink(simulation_name: str, snapshot_idx: int, field_type:
     os.symlink(
         get_delaunay_path(simulation_name, snapshot_idx, field_type),
         get_delaunay_time_symlink_path(simulation_name, snapshot_idx, field_type),
+    )
+
+
+def create_resampled_delaunay_symlink(simulation_name: str, snapshot_idx: int, field_type: FieldType) -> None:
+    """Create symlink for resampled delauny for loading of timed data."""
+    path = path_to_resampled_file(simulation_name, snapshot_idx, field_type)
+    if path is None:
+        logger.error(
+            "Couldn't create symlink for %(name)s, %(idx)d, %(type)s, because the target file doesn't exist.",
+            {"name": simulation_name, "idx": snapshot_idx, "type": field_type.value},
+        )
+        return
+    os.symlink(
+        path,
+        get_resampled_delaunay_time_symlink_path(simulation_name, snapshot_idx, field_type),
     )

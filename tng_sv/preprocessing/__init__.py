@@ -91,14 +91,6 @@ def run_resample_delaunay(simulation_name: str, snapshot_idx: int, field_type: F
     # create a new vtkResampleToImage
     resample_to_image = vtkResampleToImage()
     resample_to_image.SetInputConnection(0, delaunay_pvd.GetOutputPort(0))
-    resample_to_image.SetSamplingBounds(
-        4800.045737701259,
-        9799.955502248535,
-        22000.00873616014,
-        26999.97518430174,
-        19000.00712338154,
-        23999.983433255224,
-    )
     resample_to_image.SetSamplingDimensions(100, 100, 100)
     resample_to_image.SetUseInputBounds(True)
 

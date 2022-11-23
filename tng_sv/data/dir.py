@@ -41,4 +41,13 @@ def get_delaunay_time_symlink_path(simulation_name: str, snapshot_idx: int, fiel
     if not _dir.exists():
         os.makedirs(_dir)
 
+    return _dir.joinpath(f"combined_{field_type.value}_delaunay.{snapshot_idx:03d}.pvd")
+
+
+def get_resampled_delaunay_time_symlink_path(simulation_name: str, snapshot_idx: int, field_type: FieldType) -> Path:
+    """Get the path to a symlink target for a specific time of a  delaunay."""
+    _dir = DATADIR.joinpath(f"{simulation_name}/{field_type.value}_resampled_delaunay_time_data/")
+    if not _dir.exists():
+        os.makedirs(_dir)
+
     return _dir.joinpath(f"combined_{field_type.value}_resampled_delaunay.{snapshot_idx:03d}.pvd")
