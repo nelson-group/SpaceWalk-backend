@@ -66,7 +66,6 @@ def run(
     simulation_name: str = "TNG50-4-Subbox2",
     snapshot_idx_step_size: int = 100,
     field_type: FieldType = cast(FieldType, "Velocities"),
-    download: bool = True,
 ) -> None:
     """Run the whole pipeline."""
     amount = get_snapshot_amount(simulation_name)
@@ -75,20 +74,20 @@ def run(
     if _range[-1] != amount:
         _range = np.append(_range, amount - 1)
 
-    args = [(simulation_name, i, field_type, download) for i in _range]
+    args = [(simulation_name, i, field_type) for i in _range]
     with ProcessPoolExecutor(max_workers=os.cpu_count()) as pool:
         pool.map(_run, args)
 
 
-def _run(simulation: Tuple[str, int, FieldType, bool]) -> None:
+def _run(simulation: Tuple[str, int, FieldType]) -> None:
     """Do things, exit early if already done."""
     try:
-        simulation_name, snapshot_idx, field_type, download = simulation
-
-        if len(list(get_snapshot_index_path(simulation_name, snapshot_idx).glob("*.*.hdf5"))) == 0 and download:
-            download_snapshot(simulation_name, snapshot_idx)
+        simulation_name, snapshot_idx, field_type = simulation
 
         if not get_resampled_delaunay_path(simulation_name, snapshot_idx, field_type).exists():
+            if len(list(get_snapshot_index_path(simulation_name, snapshot_idx).glob("*.*.hdf5"))) == 0:
+                download_snapshot(simulation_name, snapshot_idx)
+
             combine_snapshot(simulation_name, snapshot_idx, field_type)
             run_delaunay(simulation_name, snapshot_idx, field_type)
             resample(simulation_name, snapshot_idx, field_type)
