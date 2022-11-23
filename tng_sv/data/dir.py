@@ -2,12 +2,15 @@
 
 import contextlib
 import glob
+import logging
 import os
 from pathlib import Path
 from typing import Optional
 
 from tng_sv.data import DATADIR
 from tng_sv.data.field_type import FieldType
+
+logger = logging.getLogger(__name__)
 
 
 def get_snapshot_index_path(simulation_name: str, snapshot_idx: int) -> Path:
@@ -18,21 +21,30 @@ def get_snapshot_index_path(simulation_name: str, snapshot_idx: int) -> Path:
 def get_snapshot_combination_index_path(simulation_name: str, snapshot_idx: int, field_type: FieldType) -> Path:
     """Return path to a combined simulation snapshot."""
     _dir = DATADIR.joinpath(f"{simulation_name}/{snapshot_idx:03d}/")
-    return Path(glob.glob(f"{_dir}/combined_{field_type.value}*.hdf5")[0])
+    return _dir.joinpath(f"combined_{field_type.value}_{simulation_name.lower()}_{snapshot_idx:03d}.hdf5")
 
 
 def get_delaunay_path(simulation_name: str, snapshot_idx: int, field_type: FieldType) -> Path:
     """Return path to the delaunay output file."""
     _dir = DATADIR.joinpath(f"{simulation_name}/{snapshot_idx:03d}/")
-    return Path(glob.glob(f"{_dir}/combined_{field_type.value}*_{snapshot_idx:03d}_delaunay.pvd")[0])
+    return _dir.joinpath(f"combined_{field_type.value}_{simulation_name.lower()}_{snapshot_idx:03d}_delaunay.pvd")
 
 
 def path_to_resampled_file(simulation_name: str, snapshot_idx: int, field_type: FieldType) -> Optional[Path]:
     """Return path to the delaunay output file."""
+    logger.warning("path_to_resampled_file is deprecated. Use get_path_to_resampled_file instead!")
     _dir = DATADIR.joinpath(f"{simulation_name}/{snapshot_idx:03d}/")
     with contextlib.suppress(IndexError):
         return Path(glob.glob(f"{_dir}/combined_{field_type.value}*_{snapshot_idx:03d}_resampled_delaunay.pvd")[0])
     return None
+
+
+def get_resampled_delaunay_path(simulation_name: str, snapshot_idx: int, field_type: FieldType) -> Path:
+    """Return path to the delaunay output file."""
+    _dir = DATADIR.joinpath(f"{simulation_name}/{snapshot_idx:03d}/")
+    return _dir.joinpath(
+        f"combined_{field_type.value}_{simulation_name.lower()}_{snapshot_idx:03d}_resampled_delaunay.pvd"
+    )
 
 
 def get_delaunay_time_symlink_path(simulation_name: str, snapshot_idx: int, field_type: FieldType) -> Path:

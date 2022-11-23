@@ -11,9 +11,9 @@ import typer
 from tng_sv.api.download import download_snapshot, get_snapshot_amount
 from tng_sv.data.dir import (
     get_delaunay_time_symlink_path,
+    get_resampled_delaunay_path,
     get_resampled_delaunay_time_symlink_path,
     get_snapshot_index_path,
-    path_to_resampled_file,
 )
 from tng_sv.data.field_type import FieldType
 from tng_sv.data.utils import combine_snapshot, create_delaunay_symlink, create_resampled_delaunay_symlink
@@ -78,7 +78,7 @@ def _run(simulation: Tuple[str, int, FieldType, bool]) -> None:
     if len(list(get_snapshot_index_path(simulation_name, snapshot_idx).glob("*.*.hdf5"))) == 0 and download:
         download_snapshot(simulation_name, snapshot_idx)
 
-    if path_to_resampled_file(simulation_name, snapshot_idx, field_type) is None:
+    if not get_resampled_delaunay_path(simulation_name, snapshot_idx, field_type).exists():
         combine_snapshot(simulation_name, snapshot_idx, field_type)
         run_delaunay(simulation_name, snapshot_idx, field_type)
         resample(simulation_name, snapshot_idx, field_type)
