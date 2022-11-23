@@ -3,7 +3,7 @@
 
 import os
 from concurrent.futures import ProcessPoolExecutor
-from typing import Tuple
+from typing import Tuple, cast
 
 import numpy as np
 import typer
@@ -56,7 +56,7 @@ def resample(
 def run(
     simulation_name: str = "TNG50-4-Subbox2",
     snapshot_idx_step_size: int = 100,
-    field_type: FieldType = FieldType.VELOCITY,
+    field_type: FieldType = cast(FieldType, "Velocities"),
     download: bool = True,
 ) -> None:
     """Run the whole pipeline."""
