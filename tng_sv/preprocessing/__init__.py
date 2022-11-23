@@ -69,7 +69,7 @@ def run_delaunay(simulation_name: str, snapshot_idx: int, field_type: FieldType)
 
     writer = vtk.vtkXMLUnstructuredGridWriter()
     writer.SetInputConnection(delaunay3d.GetOutputPort(0))
-    writer.SetFileName(str(path).replace(".hdf5", "_delaunay.pvd"))
+    writer.SetFileName(str(path).replace(f"_{snapshot_idx:03d}.hdf5", f"_{snapshot_idx:03d}_delaunay.pvd"))
     writer.Write()
 
 
@@ -96,5 +96,7 @@ def run_resample_delaunay(simulation_name: str, snapshot_idx: int, field_type: F
 
     writer = vtk.vtkXMLImageDataWriter()
     writer.SetInputConnection(resample_to_image.GetOutputPort(0))
-    writer.SetFileName(str(path).replace("delaunay.pvd", "resampled_delaunay.pvd"))
+    writer.SetFileName(
+        str(path).replace(f"_{snapshot_idx:03d}_delaunay.pvd", f"_{snapshot_idx:03d}_resampled_delaunay.pvd")
+    )
     writer.Write()

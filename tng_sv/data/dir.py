@@ -24,14 +24,14 @@ def get_snapshot_combination_index_path(simulation_name: str, snapshot_idx: int,
 def get_delaunay_path(simulation_name: str, snapshot_idx: int, field_type: FieldType) -> Path:
     """Return path to the delaunay output file."""
     _dir = DATADIR.joinpath(f"{simulation_name}/{snapshot_idx:03d}/")
-    return Path(glob.glob(f"{_dir}/combined_{field_type.value}*_delaunay.pvd")[0])
+    return Path(glob.glob(f"{_dir}/combined_{field_type.value}*_{snapshot_idx:03d}_delaunay.pvd")[0])
 
 
 def path_to_resampled_file(simulation_name: str, snapshot_idx: int, field_type: FieldType) -> Optional[Path]:
     """Return path to the delaunay output file."""
     _dir = DATADIR.joinpath(f"{simulation_name}/{snapshot_idx:03d}/")
     with contextlib.suppress(IndexError):
-        return Path(glob.glob(f"{_dir}/combined_{field_type.value}*_resampled_delaunay.pvd")[0])
+        return Path(glob.glob(f"{_dir}/combined_{field_type.value}*_{snapshot_idx:03d}_resampled_delaunay.pvd")[0])
     return None
 
 
@@ -41,7 +41,7 @@ def get_delaunay_time_symlink_path(simulation_name: str, snapshot_idx: int, fiel
     if not _dir.exists():
         os.makedirs(_dir)
 
-    return _dir.joinpath(f"combined_{field_type.value}_delaunay.{snapshot_idx:03d}.pvd")
+    return _dir.joinpath(f"combined_{field_type.value}_{snapshot_idx:03d}_delaunay.pvd")
 
 
 def get_resampled_delaunay_time_symlink_path(simulation_name: str, snapshot_idx: int, field_type: FieldType) -> Path:
@@ -50,4 +50,4 @@ def get_resampled_delaunay_time_symlink_path(simulation_name: str, snapshot_idx:
     if not _dir.exists():
         os.makedirs(_dir)
 
-    return _dir.joinpath(f"combined_{field_type.value}_resampled_delaunay.{snapshot_idx:03d}.pvd")
+    return _dir.joinpath(f"combined_{field_type.value}_{snapshot_idx:03d}_resampled_delaunay.pvd")

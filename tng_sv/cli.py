@@ -22,8 +22,8 @@ from tng_sv.preprocessing import run_delaunay, run_resample_delaunay
 app = typer.Typer()
 
 
-@app.command()
-def download(simulation_name: str = "TNG50-4-Subbox2", snapshot_idx: int = 0) -> None:
+@app.command(name="download")
+def download_cmd(simulation_name: str = "TNG50-4-Subbox2", snapshot_idx: int = 0) -> None:
     """Download a snapshot."""
     download_snapshot(simulation_name, snapshot_idx)
 
@@ -57,6 +57,7 @@ def run(
     simulation_name: str = "TNG50-4-Subbox2",
     snapshot_idx_step_size: int = 100,
     field_type: FieldType = FieldType.VELOCITY,
+    download: bool = True,
 ) -> None:
     """Run the whole pipeline."""
     amount = get_snapshot_amount(simulation_name)
@@ -65,16 +66,16 @@ def run(
     if _range[-1] != amount:
         _range = np.append(_range, amount)
 
-    args = [(simulation_name, i, field_type) for i in _range]
+    args = [(simulation_name, i, field_type, download) for i in _range]
     with ProcessPoolExecutor(max_workers=os.cpu_count()) as pool:
         pool.map(_run, args)
 
 
-def _run(simulation: Tuple[str, int, FieldType]) -> None:
+def _run(simulation: Tuple[str, int, FieldType, bool]) -> None:
     """Do things, exit early if already done."""
-    simulation_name, snapshot_idx, field_type = simulation
+    simulation_name, snapshot_idx, field_type, download = simulation
 
-    if len(list(get_snapshot_index_path(simulation_name, snapshot_idx).glob("*.*.hdf5"))) == 0:
+    if len(list(get_snapshot_index_path(simulation_name, snapshot_idx).glob("*.*.hdf5"))) == 0 and download:
         download_snapshot(simulation_name, snapshot_idx)
 
     if path_to_resampled_file(simulation_name, snapshot_idx, field_type) is None:

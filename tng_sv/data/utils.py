@@ -38,7 +38,9 @@ def combine_snapshot(simulation_name: str, snapshot_idx: int, field_type: FieldT
             except KeyError:
                 continue
 
-    f_out = h5py.File(_dir.joinpath(f"combined_{field_type.value}_{simulation_name.lower()}.hdf5"), "w")
+    f_out = h5py.File(
+        _dir.joinpath(f"combined_{field_type.value}_{simulation_name.lower()}_{snapshot_idx:03d}.hdf5"), "w"
+    )
     f_out.create_group("PartType0")
     f_out["PartType0"].create_dataset("Coordinates", coordinates.shape, float, coordinates)
     f_out["PartType0"].create_dataset(field_type.value, values.shape, float, values)
