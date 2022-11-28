@@ -63,7 +63,7 @@ def resample(
 
 
 @app.command()
-def scalar_field_experiments(
+def scalar_field_experiments_for_one_idx(
     simulation_name: str = "TNG50-4-Subbox2",
     snapshot_idx: int = 0,
     field_type_1: FieldType = cast(FieldType, "Velocities"),
@@ -72,6 +72,33 @@ def scalar_field_experiments(
     """Run the scalar field experiments for a given simulation snapshot."""
     scalar_product(simulation_name, snapshot_idx, field_type_1, field_type_2)
     vector_angle(simulation_name, snapshot_idx, field_type_1, field_type_2)
+    print(f"Did scalar field experiments for snapshot idx {snapshot_idx}")
+
+
+def _scalar_field_experiments_for_one_idx_wrapper(args):
+    """Wrapper for running the scalar field experiments with multiple snapshots"""
+    scalar_field_experiments_for_one_idx(*args)
+
+
+@app.command()
+def run_scalar_field_experiments(
+    simulation_name: str = "TNG50-4-Subbox2",
+    snapshot_idx_step_size: int = 100,
+    field_type_1: FieldType = cast(FieldType, "Velocities"),
+    field_type_2: FieldType = cast(FieldType, "MagneticField"),
+):
+    """Run the scalar field experiments for multiple simulation snapshots."""
+    amount = get_snapshot_amount(simulation_name)
+    _range = np.arange(0, amount, snapshot_idx_step_size)
+
+    if _range[-1] != amount:
+        _range = np.append(_range, amount - 1)
+
+    print(_range)
+
+    args = [(simulation_name, i, field_type_1, field_type_2) for i in _range]
+    with ProcessPoolExecutor(max_workers=os.cpu_count()) as pool:
+        pool.map(_scalar_field_experiments_for_one_idx_wrapper, args)
 
 
 @app.command()
