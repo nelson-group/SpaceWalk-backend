@@ -12,6 +12,8 @@ from tng_sv.data.dir import (
     get_delaunay_time_symlink_path,
     get_resampled_delaunay_path,
     get_resampled_delaunay_time_symlink_path,
+    get_scalar_field_experiment_path,
+    get_scalar_field_experiment_symlink_path,
     get_snapshot_index_path,
 )
 from tng_sv.data.field_type import FieldType
@@ -70,4 +72,16 @@ def create_resampled_delaunay_symlink(simulation_name: str, snapshot_idx: int, f
     os.symlink(
         path,
         get_resampled_delaunay_time_symlink_path(simulation_name, snapshot_idx, field_type),
+    )
+
+
+def create_scalar_field_experiment_symlink(
+    simulation_name: str, snapshot_idx: int, experiment_name: str, field_type_1: FieldType, field_type_2: FieldType
+) -> None:
+    """Create symlink for a specific time of a scalar field experiment."""
+    os.symlink(
+        get_scalar_field_experiment_path(simulation_name, snapshot_idx, experiment_name, field_type_1, field_type_2),
+        get_scalar_field_experiment_symlink_path(
+            simulation_name, snapshot_idx, experiment_name, field_type_1, field_type_2
+        ),
     )

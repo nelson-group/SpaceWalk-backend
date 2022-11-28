@@ -14,10 +14,16 @@ from tng_sv.data.dir import (
     get_delaunay_time_symlink_path,
     get_resampled_delaunay_path,
     get_resampled_delaunay_time_symlink_path,
+    get_scalar_field_experiment_path,
     get_snapshot_index_path,
 )
 from tng_sv.data.field_type import FieldType
-from tng_sv.data.utils import combine_snapshot, create_delaunay_symlink, create_resampled_delaunay_symlink
+from tng_sv.data.utils import (
+    combine_snapshot,
+    create_delaunay_symlink,
+    create_resampled_delaunay_symlink,
+    create_scalar_field_experiment_symlink,
+)
 from tng_sv.preprocessing import run_delaunay, run_resample_delaunay
 from tng_sv.preprocessing.two_field_operations import scalar_product, vector_angle
 
@@ -70,9 +76,30 @@ def scalar_field_experiments_for_one_idx(
     field_type_2: FieldType = cast(FieldType, "MagneticField"),
 ) -> None:
     """Run the scalar field experiments for a given simulation snapshot."""
-    scalar_product(simulation_name, snapshot_idx, field_type_1, field_type_2)
-    vector_angle(simulation_name, snapshot_idx, field_type_1, field_type_2)
-    print(f"Did scalar field experiments for snapshot idx {snapshot_idx}")
+    if (
+        get_scalar_field_experiment_path(
+            simulation_name, snapshot_idx, "scalar_product", field_type_1, field_type_2
+        ).exists()
+        and get_scalar_field_experiment_path(
+            simulation_name, snapshot_idx, "vector_angle", field_type_1, field_type_2
+        ).exists()
+    ):
+        print(f"[snapshot idx {snapshot_idx}] experiments already computed")
+    elif (
+        get_resampled_delaunay_path(simulation_name, snapshot_idx, FieldType.VELOCITY).exists()
+        and get_resampled_delaunay_path(simulation_name, snapshot_idx, FieldType.MAGNETIC).exists()
+    ):
+        scalar_product(simulation_name, snapshot_idx, field_type_1, field_type_2)
+        vector_angle(simulation_name, snapshot_idx, field_type_1, field_type_2)
+        create_scalar_field_experiment_symlink(
+            simulation_name, snapshot_idx, "scalar_product", field_type_1, field_type_2
+        )
+        create_scalar_field_experiment_symlink(
+            simulation_name, snapshot_idx, "vector_angle", field_type_1, field_type_2
+        )
+        print(f"[snapshot idx {snapshot_idx}] did scalar field experiments :)")
+    else:
+        print(f"[snapshot idx {snapshot_idx}] missing image data!")
 
 
 def _scalar_field_experiments_for_one_idx_wrapper(args):

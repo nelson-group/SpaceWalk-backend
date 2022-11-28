@@ -2,11 +2,13 @@
 
 # pylint: disable=import-error, no-name-in-module, no-member
 
+from pathlib import Path
+
 import numpy as np
 import vtk
 from vtk.util.numpy_support import numpy_to_vtk, vtk_to_numpy
 
-from tng_sv.data.dir import get_resampled_delaunay_path, get_snapshot_index_path
+from tng_sv.data.dir import get_resampled_delaunay_path, get_scalar_field_experiment_path
 from tng_sv.data.field_type import FieldType
 
 
@@ -30,18 +32,7 @@ def _image_data_to_nd_array(field: vtk.vtkImageData, field_type: FieldType) -> n
     return data_array.reshape(*dims, -1)
 
 
-def _get_experiment_file_name(
-    simulation_name: str, snapshot_idx: int, experiment_name: str, field_type_1: FieldType, field_type_2: FieldType
-) -> str:
-    """Returns the file name for a given experiment"""
-    return str(
-        get_snapshot_index_path(simulation_name, snapshot_idx).joinpath(
-            f"combined_{field_type_1.value}_{field_type_2.value}_{experiment_name}_{simulation_name}_{snapshot_idx}.pvd"
-        )
-    )
-
-
-def _save_ndarray_to_image_data(data: np.ndarray, input_field: vtk.vtkImageData, file_name: str) -> None:
+def _save_ndarray_to_image_data(data: np.ndarray, input_field: vtk.vtkImageData, file_name: Path) -> None:
     """Saves a given ndarray using vtkXMLImageDataWriter"""
     output_vtk_image = vtk.vtkImageData()
     output_vtk_image.SetDimensions(*data.shape[:-1])
@@ -52,7 +43,7 @@ def _save_ndarray_to_image_data(data: np.ndarray, input_field: vtk.vtkImageData,
 
     writer = vtk.vtkXMLImageDataWriter()
     writer.SetInputData(output_vtk_image)
-    writer.SetFileName(file_name)
+    writer.SetFileName(str(file_name))
     writer.Write()
 
 
@@ -83,7 +74,7 @@ def scalar_product(simulation_name: str, snapshot_idx: int, field_type_1: FieldT
     _save_ndarray_to_image_data(
         _compute_scalar_product(field_1, field_2),
         field_1_image,
-        _get_experiment_file_name(simulation_name, snapshot_idx, "scalar_product", field_type_1, field_type_2),
+        get_scalar_field_experiment_path(simulation_name, snapshot_idx, "scalar_product", field_type_1, field_type_2),
     )
 
 
@@ -105,5 +96,5 @@ def vector_angle(simulation_name: str, snapshot_idx: int, field_type_1: FieldTyp
     _save_ndarray_to_image_data(
         angle,
         field_1_image,
-        _get_experiment_file_name(simulation_name, snapshot_idx, "vector_angle", field_type_1, field_type_2),
+        get_scalar_field_experiment_path(simulation_name, snapshot_idx, "vector_angle", field_type_1, field_type_2),
     )

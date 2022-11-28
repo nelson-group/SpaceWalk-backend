@@ -47,6 +47,15 @@ def get_resampled_delaunay_path(simulation_name: str, snapshot_idx: int, field_t
     )
 
 
+def get_scalar_field_experiment_path(
+    simulation_name: str, snapshot_idx: int, experiment_name: str, field_type_1: FieldType, field_type_2: FieldType
+) -> Path:
+    """Return path to the experiment output file."""
+    return get_snapshot_index_path(simulation_name, snapshot_idx).joinpath(
+        f"combined_{field_type_1.value}_{field_type_2.value}_{experiment_name}_{simulation_name}_{snapshot_idx}.pvd"
+    )
+
+
 def get_delaunay_time_symlink_path(simulation_name: str, snapshot_idx: int, field_type: FieldType) -> Path:
     """Get the path to a symlink target for a specific time of a  delaunay."""
     _dir = DATADIR.joinpath(f"{simulation_name}/{field_type.value}_delaunay_time_data/")
@@ -57,9 +66,22 @@ def get_delaunay_time_symlink_path(simulation_name: str, snapshot_idx: int, fiel
 
 
 def get_resampled_delaunay_time_symlink_path(simulation_name: str, snapshot_idx: int, field_type: FieldType) -> Path:
-    """Get the path to a symlink target for a specific time of a  delaunay."""
+    """Get the path to a symlink target for a specific time of a delaunay."""
     _dir = DATADIR.joinpath(f"{simulation_name}/{field_type.value}_resampled_delaunay_time_data/")
     if not _dir.exists():
         os.makedirs(_dir)
 
     return _dir.joinpath(f"combined_{field_type.value}_resampled_delaunay.{snapshot_idx:03d}.pvd")
+
+
+def get_scalar_field_experiment_symlink_path(
+    simulation_name: str, snapshot_idx: int, experiment_name: str, field_type_1: FieldType, field_type_2: FieldType
+) -> Path:
+    """Get the path to a symlink target for a specific time of a scalar field experiment."""
+    _dir = DATADIR.joinpath(f"{simulation_name}/{field_type_1.value}_{field_type_2.value}_{experiment_name}_time_data")
+    if not _dir.exists():
+        os.makedirs(_dir)
+
+    return _dir.joinpath(
+        f"combined_{field_type_1.value}_{field_type_2.value}_{experiment_name}_{simulation_name}.{snapshot_idx}.pvd"
+    )
