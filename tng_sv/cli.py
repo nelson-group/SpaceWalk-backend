@@ -19,6 +19,7 @@ from tng_sv.data.dir import (
 from tng_sv.data.field_type import FieldType
 from tng_sv.data.utils import combine_snapshot, create_delaunay_symlink, create_resampled_delaunay_symlink
 from tng_sv.preprocessing import run_delaunay, run_resample_delaunay
+from tng_sv.preprocessing.two_field_operations import scalar_product, vector_angle
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +60,18 @@ def resample(
 ) -> None:
     """Download a snapshot."""
     run_resample_delaunay(simulation_name, snapshot_idx, field_type)
+
+
+@app.command()
+def scalar_field_experiments(
+    simulation_name: str = "TNG50-4-Subbox2",
+    snapshot_idx: int = 0,
+    field_type_1: FieldType = cast(FieldType, "Velocities"),
+    field_type_2: FieldType = cast(FieldType, "MagneticField"),
+) -> None:
+    """Run the scalar field experiments for a given simulation snapshot."""
+    scalar_product(simulation_name, snapshot_idx, field_type_1, field_type_2)
+    vector_angle(simulation_name, snapshot_idx, field_type_1, field_type_2)
 
 
 @app.command()
