@@ -18,11 +18,12 @@ from tng_sv.data.dir import (
     get_snapshot_index_path,
 )
 from tng_sv.data.field_type import FieldType
+from tng_sv.data.part_type import PartType
 
 logger = logging.getLogger(__name__)
 
 
-def combine_snapshot(simulation_name: str, snapshot_idx: int, field_type: FieldType) -> Path:
+def combine_snapshot(simulation_name: str, snapshot_idx: int, part_type: PartType, field_type: FieldType) -> Path:
     """Combine a snapshot."""
     _dir = get_snapshot_index_path(simulation_name, snapshot_idx)
 
@@ -36,34 +37,44 @@ def combine_snapshot(simulation_name: str, snapshot_idx: int, field_type: FieldT
     for file_name in file_names:
         with h5py.File(file_name, "r") as f_in:
             try:
-                coordinates = np.concatenate((coordinates, f_in["PartType0"]["Coordinates"]), axis=0)
-                values = np.concatenate((values, f_in["PartType0"][field_type.value]), axis=0)
+                coordinates = np.concatenate((coordinates, f_in[part_type.value]["Coordinates"]), axis=0)
+                values = np.concatenate((values, f_in[part_type.value][field_type.value]), axis=0)
             except KeyError:
+                logger.warning(
+                    "No data of type %(_type)s in file %(_file)s", {"_type": part_type.value, "_file": file_name}
+                )
                 continue
 
     f_out = h5py.File(
-        _dir.joinpath(f"combined_{field_type.value}_{simulation_name.lower()}_{snapshot_idx:03d}.hdf5"), "w"
+        _dir.joinpath(
+            f"combined_{part_type.filename}{field_type.value}_{simulation_name.lower()}_{snapshot_idx:03d}.hdf5"
+        ),
+        "w",
     )
-    f_out.create_group("PartType0")
-    f_out["PartType0"].create_dataset("Coordinates", coordinates.shape, float, coordinates)
-    f_out["PartType0"].create_dataset(field_type.value, values.shape, float, values)
+    f_out.create_group(part_type.value)
+    f_out[part_type.value].create_dataset("Coordinates", coordinates.shape, float, coordinates)
+    f_out[part_type.value].create_dataset(field_type.value, values.shape, float, values)
 
     file_name = Path(f_out.filename)
     f_out.close()
     return file_name
 
 
-def create_delaunay_symlink(simulation_name: str, snapshot_idx: int, field_type: FieldType) -> None:
+def create_delaunay_symlink(
+    simulation_name: str, snapshot_idx: int, part_type: PartType, field_type: FieldType
+) -> None:
     """Create symlink for combined delauny for loading of timed data."""
     os.symlink(
-        get_delaunay_path(simulation_name, snapshot_idx, field_type),
-        get_delaunay_time_symlink_path(simulation_name, snapshot_idx, field_type),
+        get_delaunay_path(simulation_name, snapshot_idx, part_type, field_type),
+        get_delaunay_time_symlink_path(simulation_name, snapshot_idx, part_type, field_type),
     )
 
 
-def create_resampled_delaunay_symlink(simulation_name: str, snapshot_idx: int, field_type: FieldType) -> None:
+def create_resampled_delaunay_symlink(
+    simulation_name: str, snapshot_idx: int, part_type: PartType, field_type: FieldType
+) -> None:
     """Create symlink for resampled delauny for loading of timed data."""
-    path = get_resampled_delaunay_path(simulation_name, snapshot_idx, field_type)
+    path = get_resampled_delaunay_path(simulation_name, snapshot_idx, part_type, field_type)
     if not path.exists():
         logger.error(
             "Couldn't create symlink for %(name)s, %(idx)d, %(type)s, because the target file doesn't exist.",
@@ -72,7 +83,7 @@ def create_resampled_delaunay_symlink(simulation_name: str, snapshot_idx: int, f
         return
     os.symlink(
         path,
-        get_resampled_delaunay_time_symlink_path(simulation_name, snapshot_idx, field_type),
+        get_resampled_delaunay_time_symlink_path(simulation_name, snapshot_idx, part_type, field_type),
     )
 
 

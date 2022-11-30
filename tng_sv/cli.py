@@ -20,6 +20,7 @@ from tng_sv.data.dir import (
     get_snapshot_index_path,
 )
 from tng_sv.data.field_type import FieldType
+from tng_sv.data.part_type import PartType
 from tng_sv.data.utils import (
     combine_snapshot,
     create_delaunay_symlink,
@@ -44,30 +45,33 @@ def download_cmd(simulation_name: str = "TNG50-4-Subbox2", snapshot_idx: int = 0
 def combine(
     simulation_name: str = "TNG50-4-Subbox2",
     snapshot_idx: int = 0,
+    part_type: PartType = cast(PartType, "PartType0"),
     field_type: FieldType = cast(FieldType, "Velocities"),
 ) -> None:
     """Combine a snapshot."""
-    combine_snapshot(simulation_name, snapshot_idx, field_type)
+    combine_snapshot(simulation_name, snapshot_idx, part_type, field_type)
 
 
 @app.command()
 def delaunay(
     simulation_name: str = "TNG50-4-Subbox2",
     snapshot_idx: int = 0,
+    part_type: PartType = cast(PartType, "PartType0"),
     field_type: FieldType = cast(FieldType, "Velocities"),
 ) -> None:
     """Download a snapshot."""
-    run_delaunay(simulation_name, snapshot_idx, field_type)
+    run_delaunay(simulation_name, snapshot_idx, part_type, field_type)
 
 
 @app.command()
 def resample(
     simulation_name: str = "TNG50-4-Subbox2",
     snapshot_idx: int = 0,
+    part_type: PartType = cast(PartType, "PartType0"),
     field_type: FieldType = cast(FieldType, "Velocities"),
 ) -> None:
     """Download a snapshot."""
-    run_resample_delaunay(simulation_name, snapshot_idx, field_type)
+    run_resample_delaunay(simulation_name, snapshot_idx, part_type, field_type)
 
 
 @app.command()
@@ -90,8 +94,8 @@ def scalar_field_experiments_for_one_idx(
     ):
         print(f"[snapshot idx {snapshot_idx}] experiments already computed")
     elif (
-        get_resampled_delaunay_path(simulation_name, snapshot_idx, FieldType.VELOCITY).exists()
-        and get_resampled_delaunay_path(simulation_name, snapshot_idx, FieldType.MAGNETIC).exists()
+        get_resampled_delaunay_path(simulation_name, snapshot_idx, PartType.GAS, FieldType.VELOCITY).exists()
+        and get_resampled_delaunay_path(simulation_name, snapshot_idx, PartType.GAS, FieldType.MAGNETIC).exists()
     ):
         scalar_product(simulation_name, snapshot_idx, field_type_1, field_type_2)
         vector_angle(simulation_name, snapshot_idx, field_type_1, field_type_2)
@@ -142,6 +146,7 @@ def run_scalar_field_experiments(
 def run(
     simulation_name: str = "TNG50-4-Subbox2",
     snapshot_idx_step_size: int = 100,
+    part_type: PartType = cast(PartType, "PartType0"),
     field_type: FieldType = cast(FieldType, "Velocities"),
 ) -> None:
     """Run the whole pipeline."""
@@ -151,29 +156,29 @@ def run(
     if _range[-1] != amount:
         _range = np.append(_range, amount - 1)
 
-    args = [(simulation_name, i, field_type) for i in _range]
+    args = [(simulation_name, i, part_type, field_type) for i in _range]
     with ProcessPoolExecutor(max_workers=os.cpu_count()) as pool:
         pool.map(_run, args)
 
 
-def _run(simulation: Tuple[str, int, FieldType]) -> None:
+def _run(simulation: Tuple[str, int, PartType, FieldType]) -> None:
     """Do things, exit early if already done."""
     try:
-        simulation_name, snapshot_idx, field_type = simulation
+        simulation_name, snapshot_idx, part_type, field_type = simulation
 
-        if not get_resampled_delaunay_path(simulation_name, snapshot_idx, field_type).exists():
+        if not get_resampled_delaunay_path(simulation_name, snapshot_idx, part_type, field_type).exists():
             if len(list(get_snapshot_index_path(simulation_name, snapshot_idx).glob("*.*.hdf5"))) == 0:
                 download_snapshot(simulation_name, snapshot_idx)
 
-            combine_snapshot(simulation_name, snapshot_idx, field_type)
-            run_delaunay(simulation_name, snapshot_idx, field_type)
-            resample(simulation_name, snapshot_idx, field_type)
+            combine_snapshot(simulation_name, snapshot_idx, part_type, field_type)
+            run_delaunay(simulation_name, snapshot_idx, part_type, field_type)
+            resample(simulation_name, snapshot_idx, part_type, field_type)
 
-        if not get_delaunay_time_symlink_path(simulation_name, snapshot_idx, field_type).exists():
-            create_delaunay_symlink(simulation_name, snapshot_idx, field_type)
+        if not get_delaunay_time_symlink_path(simulation_name, snapshot_idx, part_type, field_type).exists():
+            create_delaunay_symlink(simulation_name, snapshot_idx, part_type, field_type)
 
-        if not get_resampled_delaunay_time_symlink_path(simulation_name, snapshot_idx, field_type).exists():
-            create_resampled_delaunay_symlink(simulation_name, snapshot_idx, field_type)
+        if not get_resampled_delaunay_time_symlink_path(simulation_name, snapshot_idx, part_type, field_type).exists():
+            create_resampled_delaunay_symlink(simulation_name, snapshot_idx, part_type, field_type)
     except Exception as exc:
         logger.exception("Failed job: %(job)s with exc: %(exc)s", {"job": simulation, "exc": exc})
         raise exc from exc

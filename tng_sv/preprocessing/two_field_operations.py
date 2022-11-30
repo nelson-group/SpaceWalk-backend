@@ -10,11 +10,12 @@ from vtk.util.numpy_support import numpy_to_vtk, vtk_to_numpy
 
 from tng_sv.data.dir import get_resampled_delaunay_path, get_scalar_field_experiment_path
 from tng_sv.data.field_type import FieldType
+from tng_sv.data.part_type import PartType
 
 
 def _load_image_data(simulation_name: str, snapshot_idx: int, field_type: FieldType) -> vtk.vtkImageData:
     """Loads the resampled image for a given simulation snapshot"""
-    path = get_resampled_delaunay_path(simulation_name, snapshot_idx, field_type)
+    path = get_resampled_delaunay_path(simulation_name, snapshot_idx, PartType.GAS, field_type)
 
     field = vtk.vtkXMLImageDataReader()
     field.SetFileName(str(path))

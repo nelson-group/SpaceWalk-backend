@@ -3,6 +3,7 @@
 
 from tng_sv.data.dir import get_delaunay_path, get_snapshot_combination_index_path
 from tng_sv.data.field_type import FieldType
+from tng_sv.data.part_type import PartType
 
 
 def assert_pvpython(func):
@@ -17,10 +18,10 @@ def assert_pvpython(func):
 
 
 @assert_pvpython
-def run_delaunay(simulation_name: str, snapshot_idx: int, field_type: FieldType) -> None:
+def run_delaunay(simulation_name: str, snapshot_idx: int, part_type: PartType, field_type: FieldType) -> None:
     """Run delaunay."""
-    # pylint: disable=import-error,import-outside-toplevel
-    path = get_snapshot_combination_index_path(simulation_name, snapshot_idx, field_type)
+    # pylint: disable=import-error,import-outside-toplevel,no-member,no-name-in-module
+    path = get_snapshot_combination_index_path(simulation_name, snapshot_idx, part_type, field_type)
 
     # Lazy import to prevent failing in non pvpython environment
     import vtk
@@ -43,10 +44,10 @@ def run_delaunay(simulation_name: str, snapshot_idx: int, field_type: FieldType)
 
         f = h5py.File("{path}", 'r')
 
-        X = f['PartType0']['Coordinates'][:, 0]
-        Y = f['PartType0']['Coordinates'][:, 1]
-        Z = f['PartType0']['Coordinates'][:, 2]
-        values = f['PartType0']["{field_type.value}"][:]
+        X = f["{part_type.value}"]['Coordinates'][:, 0]
+        Y = f["{part_type.value}"]['Coordinates'][:, 1]
+        Z = f["{part_type.value}"]['Coordinates'][:, 2]
+        values = f["{part_type.value}"]["{field_type.value}"][:]
 
         coordinates = algs.make_vector(X.ravel(), Y.ravel(), Z.ravel())
         output.Points = coordinates
@@ -74,10 +75,10 @@ def run_delaunay(simulation_name: str, snapshot_idx: int, field_type: FieldType)
 
 
 @assert_pvpython
-def run_resample_delaunay(simulation_name: str, snapshot_idx: int, field_type: FieldType) -> None:
+def run_resample_delaunay(simulation_name: str, snapshot_idx: int, part_type: PartType, field_type: FieldType) -> None:
     """Run resample on delaunay input data."""
-    # pylint: disable=import-error,import-outside-toplevel
-    path = get_delaunay_path(simulation_name, snapshot_idx, field_type)
+    # pylint: disable=import-error,import-outside-toplevel,no-member,no-name-in-module
+    path = get_delaunay_path(simulation_name, snapshot_idx, part_type, field_type)
 
     import vtk
     from vtkmodules.vtkFiltersCore import vtkResampleToImage
