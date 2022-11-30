@@ -2,6 +2,7 @@
 
 import logging
 import os
+import platform
 from pathlib import Path
 
 import h5py
@@ -79,9 +80,18 @@ def create_scalar_field_experiment_symlink(
     simulation_name: str, snapshot_idx: int, experiment_name: str, field_type_1: FieldType, field_type_2: FieldType
 ) -> None:
     """Create symlink for a specific time of a scalar field experiment."""
-    os.symlink(
-        get_scalar_field_experiment_path(simulation_name, snapshot_idx, experiment_name, field_type_1, field_type_2),
-        get_scalar_field_experiment_symlink_path(
-            simulation_name, snapshot_idx, experiment_name, field_type_1, field_type_2
-        ),
+    data_path = get_scalar_field_experiment_path(
+        simulation_name, snapshot_idx, experiment_name, field_type_1, field_type_2
     )
+    symlink_path = get_scalar_field_experiment_symlink_path(
+        simulation_name, snapshot_idx, experiment_name, field_type_1, field_type_2
+    )
+
+    if symlink_path.is_symlink():
+        return
+
+    if platform.system() == "Windows":
+        logger.warning("Unable to create symlink due to os!")
+        return
+
+    os.symlink(data_path, symlink_path)

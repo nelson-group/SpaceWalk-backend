@@ -41,10 +41,23 @@ def _save_ndarray_to_image_data(data: np.ndarray, input_field: vtk.vtkImageData,
     depth_array = numpy_to_vtk(data.ravel(), deep=True, array_type=vtk.VTK_DOUBLE)
     output_vtk_image.GetPointData().SetScalars(depth_array)
 
+    if file_name.exists():
+        file_name.unlink()
+
     writer = vtk.vtkXMLImageDataWriter()
     writer.SetInputData(output_vtk_image)
     writer.SetFileName(str(file_name))
     writer.Write()
+
+
+def _normalize_vector_field(field: np.ndarray) -> np.ndarray:
+    """Normalizes the vectors in the given vector field"""
+    result = np.zeros_like(field)
+    vector_length = _compute_vector_length(field)
+
+    existing_values = vector_length[:, :, :, 0] != 0
+    result[existing_values, :] = field[existing_values, :] / vector_length[existing_values]
+    return result
 
 
 def _compute_scalar_product(field_1: np.ndarray, field_2: np.ndarray):
@@ -63,13 +76,23 @@ def _compute_vector_length(field_data: np.ndarray):
     ).reshape((*field_data.shape[:-1], 1))
 
 
-def scalar_product(simulation_name: str, snapshot_idx: int, field_type_1: FieldType, field_type_2: FieldType) -> None:
+def scalar_product(
+    simulation_name: str,
+    snapshot_idx: int,
+    field_type_1: FieldType,
+    field_type_2: FieldType,
+    normalize_vectors: bool = True,
+) -> None:
     """Compute the scalar product between two vector fields"""
     field_1_image = _load_image_data(simulation_name, snapshot_idx, field_type_1)
     field_2_image = _load_image_data(simulation_name, snapshot_idx, field_type_2)
 
     field_1 = _image_data_to_nd_array(field_1_image, field_type_1)
     field_2 = _image_data_to_nd_array(field_2_image, field_type_2)
+
+    if normalize_vectors:
+        field_1 = _normalize_vector_field(field_1)
+        field_2 = _normalize_vector_field(field_2)
 
     _save_ndarray_to_image_data(
         _compute_scalar_product(field_1, field_2),
@@ -78,7 +101,13 @@ def scalar_product(simulation_name: str, snapshot_idx: int, field_type_1: FieldT
     )
 
 
-def vector_angle(simulation_name: str, snapshot_idx: int, field_type_1: FieldType, field_type_2: FieldType) -> None:
+def vector_angle(
+    simulation_name: str,
+    snapshot_idx: int,
+    field_type_1: FieldType,
+    field_type_2: FieldType,
+    normalize_vectors: bool = True,
+) -> None:
     """Compute the angle between the vectors in two vector fields"""
     field_1_image = _load_image_data(simulation_name, snapshot_idx, field_type_1)
     field_2_image = _load_image_data(simulation_name, snapshot_idx, field_type_2)
@@ -86,12 +115,20 @@ def vector_angle(simulation_name: str, snapshot_idx: int, field_type_1: FieldTyp
     field_1 = _image_data_to_nd_array(field_1_image, field_type_1)
     field_2 = _image_data_to_nd_array(field_2_image, field_type_2)
 
-    scalar_product_result = _compute_scalar_product(field_1, field_2)
+    if not normalize_vectors:
+        scalar_product_result = _compute_scalar_product(field_1, field_2)
 
-    field_1_vector_length = _compute_vector_length(field_1)
-    field_2_vector_length = _compute_vector_length(field_2)
+        field_1_vector_length = _compute_vector_length(field_1)
+        field_2_vector_length = _compute_vector_length(field_2)
 
-    angle = np.arccos(scalar_product_result / (field_1_vector_length * field_2_vector_length))
+        denominator = field_1_vector_length * field_2_vector_length
+
+        angle = np.zeros_like(scalar_product_result)
+        angle[denominator != 0] = np.arccos(scalar_product_result[denominator != 0] / denominator[denominator != 0])
+    else:
+        field_1 = _normalize_vector_field(field_1)
+        field_2 = _normalize_vector_field(field_2)
+        angle = np.arccos(_compute_scalar_product(field_1, field_2))
 
     _save_ndarray_to_image_data(
         angle,

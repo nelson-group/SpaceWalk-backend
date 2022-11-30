@@ -3,6 +3,8 @@
 
 import logging
 import os
+import sys
+import traceback
 from concurrent.futures import ProcessPoolExecutor
 from typing import Tuple, cast
 
@@ -74,10 +76,12 @@ def scalar_field_experiments_for_one_idx(
     snapshot_idx: int = 0,
     field_type_1: FieldType = cast(FieldType, "Velocities"),
     field_type_2: FieldType = cast(FieldType, "MagneticField"),
+    force_override: bool = False,
 ) -> None:
     """Run the scalar field experiments for a given simulation snapshot."""
     if (
-        get_scalar_field_experiment_path(
+        not force_override
+        and get_scalar_field_experiment_path(
             simulation_name, snapshot_idx, "scalar_product", field_type_1, field_type_2
         ).exists()
         and get_scalar_field_experiment_path(
@@ -104,7 +108,14 @@ def scalar_field_experiments_for_one_idx(
 
 def _scalar_field_experiments_for_one_idx_wrapper(args):
     """Wrapper for running the scalar field experiments with multiple snapshots"""
-    scalar_field_experiments_for_one_idx(*args)
+    try:
+        scalar_field_experiments_for_one_idx(*args)
+    except Exception as exception:  # pylint: disable=broad-except
+        print(f"[snapshot idx {args[1]}] failed: {exception}")
+
+        if hasattr(sys, "gettrace") and sys.gettrace() is not None:
+            # if used in debugger print the whole exception
+            traceback.print_exc()
 
 
 @app.command()
@@ -113,6 +124,7 @@ def run_scalar_field_experiments(
     snapshot_idx_step_size: int = 100,
     field_type_1: FieldType = cast(FieldType, "Velocities"),
     field_type_2: FieldType = cast(FieldType, "MagneticField"),
+    force_override: bool = False,
 ):
     """Run the scalar field experiments for multiple simulation snapshots."""
     amount = get_snapshot_amount(simulation_name)
@@ -121,9 +133,7 @@ def run_scalar_field_experiments(
     if _range[-1] != amount:
         _range = np.append(_range, amount - 1)
 
-    print(_range)
-
-    args = [(simulation_name, i, field_type_1, field_type_2) for i in _range]
+    args = [(simulation_name, i, field_type_1, field_type_2, force_override) for i in _range]
     with ProcessPoolExecutor(max_workers=os.cpu_count()) as pool:
         pool.map(_scalar_field_experiments_for_one_idx_wrapper, args)
 
