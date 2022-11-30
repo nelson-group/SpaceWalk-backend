@@ -11,6 +11,11 @@ from tng_sv.data.part_type import PartType
 logger = logging.getLogger(__name__)
 
 
+def get_bound_info_file(simulation_name: str) -> Path:
+    """Return path to bound info file for simulation_name."""
+    return DATADIR.joinpath(f"{simulation_name}/bound_info.npy")
+
+
 def get_snapshot_index_path(simulation_name: str, snapshot_idx: int) -> Path:
     """Return path to snapshot dir given simulation_name and snapshot_idx."""
     return DATADIR.joinpath(f"{simulation_name}/{snapshot_idx:03d}/")

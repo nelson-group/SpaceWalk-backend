@@ -1,7 +1,7 @@
 """Information about preprocessing."""
 
 
-from tng_sv.data.dir import get_delaunay_path, get_snapshot_combination_index_path
+from tng_sv.data.dir import get_bound_info_file, get_delaunay_path, get_snapshot_combination_index_path
 from tng_sv.data.field_type import FieldType
 from tng_sv.data.part_type import PartType
 
@@ -89,9 +89,43 @@ def run_resample_delaunay(simulation_name: str, snapshot_idx: int, part_type: Pa
     delaunay_pvd.SetFileName(path)
     delaunay_pvd.SetPointArrayStatus(field_type.value, 1)
 
+    if part_type != PartType.GAS:
+        from paraview.modules.vtkPVVTKExtensionsFiltersPython import vtkPythonProgrammableFilter
+
+        # create a new vtkPythonProgrammableFilter
+        _filter = vtkPythonProgrammableFilter()
+        _filter.SetInformationScript("")
+        _filter.SetOutputDataSetType(8)
+        _filter.AddInputConnection(0, delaunay_pvd.GetOutputPort(0))
+        _filter.SetPythonPath("")
+        _filter.SetScript(
+            f"""
+            import numpy as np
+
+            bh = inputs[0]
+
+            points = bh.GetPoints()
+            lpoints = points.tolist()
+            bound_points = np.load("{get_bound_info_file(simulation_name)}")
+            lpoints.extend(bound_points.tolist())
+            points = np.array(lpoints)
+
+            data = bh.GetPointData().GetArray("{field_type.value}")
+            ldata = data.tolist()
+            ldata.extend([[0, 0, 0]]*2)
+            data = np.array(ldata)
+
+            output.Points = points
+            output.PointData.append(data, "{field_type.value}")
+            """
+        )
+        port = _filter
+    else:
+        port = delaunay_pvd
+
     # create a new vtkResampleToImage
     resample_to_image = vtkResampleToImage()
-    resample_to_image.SetInputConnection(0, delaunay_pvd.GetOutputPort(0))
+    resample_to_image.SetInputConnection(0, port.GetOutputPort(0))
     resample_to_image.SetSamplingDimensions(100, 100, 100)
     resample_to_image.SetUseInputBounds(True)
 

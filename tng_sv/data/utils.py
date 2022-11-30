@@ -9,6 +9,7 @@ import h5py
 import numpy as np
 
 from tng_sv.data.dir import (
+    get_bound_info_file,
     get_delaunay_path,
     get_delaunay_time_symlink_path,
     get_resampled_delaunay_path,
@@ -51,6 +52,15 @@ def combine_snapshot(simulation_name: str, snapshot_idx: int, part_type: PartTyp
         ),
         "w",
     )
+
+    bound_info_file = get_bound_info_file(simulation_name)
+    if part_type == PartType.GAS and not bound_info_file.exists():
+        zeros = np.zeros((2, 3))
+        zeros[0] = np.min(coordinates, axis=0)
+        zeros[1] = np.max(coordinates, axis=0)
+        if not bound_info_file.exists():  # Double check if someone wrote in in the meantime
+            np.save(bound_info_file, zeros)
+
     f_out.create_group(part_type.value)
     f_out[part_type.value].create_dataset("Coordinates", coordinates.shape, float, coordinates)
     f_out[part_type.value].create_dataset(field_type.value, values.shape, float, values)
