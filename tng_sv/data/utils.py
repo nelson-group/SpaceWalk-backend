@@ -33,13 +33,16 @@ def combine_snapshot(simulation_name: str, snapshot_idx: int, part_type: PartTyp
         raise ValueError(f"No files found to combine. Searched at: {_dir}")
 
     coordinates = np.zeros((0, 3))
-    values = np.zeros((0, 3))
+    values = np.zeros(field_type.dim)
 
     for file_name in file_names:
         with h5py.File(file_name, "r") as f_in:
             try:
                 coordinates = np.concatenate((coordinates, f_in[part_type.value]["Coordinates"]), axis=0)
-                values = np.concatenate((values, f_in[part_type.value][field_type.value]), axis=0)
+                if field_type.dim[-1] == 3:
+                    values = np.concatenate((values, f_in[part_type.value][field_type.value]), axis=0)
+                else:
+                    values = np.concatenate((values, f_in[part_type.value][field_type.value]))
             except KeyError:
                 logger.warning(
                     "No data of type %(_type)s in file %(_file)s", {"_type": part_type.value, "_file": file_name}
