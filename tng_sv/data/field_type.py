@@ -9,6 +9,7 @@ class FieldType(Enum):
     VELOCITY = "Velocities"
     MAGNETIC = "MagneticField"
     DENSITY = "Density"
+    METALLICITY = "GFM_Metallicity"
 
     @property
     def dim(self) -> Tuple:
@@ -20,4 +21,5 @@ _DIMS = {
     FieldType.VELOCITY.value: [0, 3],
     FieldType.MAGNETIC.value: [0, 3],
     FieldType.DENSITY.value: [0],
+    FieldType.METALLICITY.value: [0],
 }
