@@ -10,11 +10,15 @@ class FieldType(Enum):
     MAGNETIC = "MagneticField"
     DENSITY = "Density"
     METALLICITY = "GFM_Metallicity"
+    ALL = "All"
 
     @property
     def dim(self) -> Tuple:
         """get dim"""
-        return tuple(_DIMS[self.value])
+        res = _DIMS[self.value]
+        if res is None:
+            raise ValueError(f"{self.value} should not be used with dims")
+        return tuple(res)
 
 
 _DIMS = {
@@ -22,4 +26,5 @@ _DIMS = {
     FieldType.MAGNETIC.value: [0, 3],
     FieldType.DENSITY.value: [0],
     FieldType.METALLICITY.value: [0],
+    FieldType.ALL.value: None,
 }

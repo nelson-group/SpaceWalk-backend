@@ -156,7 +156,15 @@ def run(
     if _range[-1] != amount:
         _range = np.append(_range, amount - 1)
 
-    args = [(simulation_name, i, part_type, field_type) for i in _range]
+    if field_type == FieldType.ALL:
+        field_types = [enum for enum in FieldType if enum != FieldType.ALL]
+        args = []
+        for i in _range:
+            for _field_type in field_types:
+                args.append((simulation_name, i, part_type, _field_type))
+    else:
+        args = [(simulation_name, i, part_type, field_type) for i in _range]
+
     with ProcessPoolExecutor(max_workers=os.cpu_count()) as pool:
         pool.map(_run, args)
 
