@@ -3,6 +3,7 @@
 import logging
 import os
 import platform
+import shutil
 from pathlib import Path
 
 import h5py
@@ -83,6 +84,14 @@ def create_delaunay_symlink(
     )
 
 
+def create_delaunay_copy(simulation_name: str, snapshot_idx: int, part_type: PartType, field_type: FieldType) -> None:
+    """Create copy for combined delauny for loading of timed data."""
+    shutil.copy(
+        get_delaunay_path(simulation_name, snapshot_idx, part_type, field_type),
+        get_delaunay_time_symlink_path(simulation_name, snapshot_idx, part_type, field_type),
+    )
+
+
 def create_resampled_delaunay_symlink(
     simulation_name: str, snapshot_idx: int, part_type: PartType, field_type: FieldType
 ) -> None:
@@ -95,6 +104,23 @@ def create_resampled_delaunay_symlink(
         )
         return
     os.symlink(
+        path,
+        get_resampled_delaunay_time_symlink_path(simulation_name, snapshot_idx, part_type, field_type),
+    )
+
+
+def create_resampled_delaunay_copy(
+    simulation_name: str, snapshot_idx: int, part_type: PartType, field_type: FieldType
+) -> None:
+    """Create copy for resampled delauny for loading of timed data."""
+    path = get_resampled_delaunay_path(simulation_name, snapshot_idx, part_type, field_type)
+    if not path.exists():
+        logger.error(
+            "Couldn't create symlink for %(name)s, %(idx)d, %(type)s, because the target file doesn't exist.",
+            {"name": simulation_name, "idx": snapshot_idx, "type": field_type.value},
+        )
+        return
+    shutil.copy(
         path,
         get_resampled_delaunay_time_symlink_path(simulation_name, snapshot_idx, part_type, field_type),
     )
