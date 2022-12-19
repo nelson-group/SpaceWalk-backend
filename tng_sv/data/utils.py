@@ -77,8 +77,9 @@ def combine_snapshot(simulation_name: str, snapshot_idx: int, part_type: PartTyp
                     np.save(bound_info_file, zeros)
         f_out[part_type.value].create_dataset(_field_type.value, values.shape, float, values)
 
+    file_name = Path(f_out.filename)
     f_out.close()
-    return Path(f_out.filename)
+    return file_name
 
 
 def create_delaunay_symlink(
