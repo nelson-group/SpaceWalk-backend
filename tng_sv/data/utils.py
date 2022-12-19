@@ -27,28 +27,17 @@ logger = logging.getLogger(__name__)
 
 def combine_snapshot(simulation_name: str, snapshot_idx: int, part_type: PartType, field_type: FieldType) -> Path:
     """Combine a snapshot."""
+    # pylint: disable=too-many-locals
     _dir = get_snapshot_index_path(simulation_name, snapshot_idx)
 
     file_names = list(_dir.glob("snap*.hdf5"))
     if len(file_names) == 0:
         raise ValueError(f"No files found to combine. Searched at: {_dir}")
 
-    coordinates = np.zeros((0, 3))
-    values = np.zeros(field_type.dim)
-
-    for file_name in file_names:
-        with h5py.File(file_name, "r") as f_in:
-            try:
-                coordinates = np.concatenate((coordinates, f_in[part_type.value]["Coordinates"]), axis=0)
-                if field_type.dim[-1] == 3:
-                    values = np.concatenate((values, f_in[part_type.value][field_type.value]), axis=0)
-                else:
-                    values = np.concatenate((values, f_in[part_type.value][field_type.value]))
-            except KeyError:
-                logger.warning(
-                    "No data of type %(_type)s in file %(_file)s", {"_type": part_type.value, "_file": file_name}
-                )
-                continue
+    if field_type == FieldType.ALL:
+        field_types = [enum for enum in FieldType if enum != FieldType.ALL]
+    else:
+        field_types = [field_type]
 
     f_out = h5py.File(
         _dir.joinpath(
@@ -56,22 +45,40 @@ def combine_snapshot(simulation_name: str, snapshot_idx: int, part_type: PartTyp
         ),
         "w",
     )
-
-    bound_info_file = get_bound_info_file(simulation_name)
-    if part_type == PartType.GAS and not bound_info_file.exists():
-        zeros = np.zeros((2, 3))
-        zeros[0] = np.min(coordinates, axis=0)
-        zeros[1] = np.max(coordinates, axis=0)
-        if not bound_info_file.exists():  # Double check if someone wrote in in the meantime
-            np.save(bound_info_file, zeros)
-
     f_out.create_group(part_type.value)
-    f_out[part_type.value].create_dataset("Coordinates", coordinates.shape, float, coordinates)
-    f_out[part_type.value].create_dataset(field_type.value, values.shape, float, values)
 
-    file_name = Path(f_out.filename)
+    first = True
+    for _field_type in field_types:
+        coordinates = np.zeros((0, 3))
+        values = np.zeros(_field_type.dim)
+
+        for file_name in file_names:
+            with h5py.File(file_name, "r") as f_in:
+                try:
+                    coordinates = np.concatenate((coordinates, f_in[part_type.value]["Coordinates"]), axis=0)
+                    if _field_type.dim[-1] == 3:
+                        values = np.concatenate((values, f_in[part_type.value][_field_type.value]), axis=0)
+                    else:
+                        values = np.concatenate((values, f_in[part_type.value][_field_type.value]))
+                except KeyError:
+                    logger.warning(
+                        "No data of type %(_type)s in file %(_file)s", {"_type": part_type.value, "_file": file_name}
+                    )
+                    continue
+        if first:
+            first = False
+            f_out[part_type.value].create_dataset("Coordinates", coordinates.shape, float, coordinates)
+            bound_info_file = get_bound_info_file(simulation_name)
+            if part_type == PartType.GAS and not bound_info_file.exists():
+                zeros = np.zeros((2, 3))
+                zeros[0] = np.min(coordinates, axis=0)
+                zeros[1] = np.max(coordinates, axis=0)
+                if not bound_info_file.exists():  # Double check if someone wrote in in the meantime
+                    np.save(bound_info_file, zeros)
+        f_out[part_type.value].create_dataset(_field_type.value, values.shape, float, values)
+
     f_out.close()
-    return file_name
+    return Path(f_out.filename)
 
 
 def create_delaunay_symlink(

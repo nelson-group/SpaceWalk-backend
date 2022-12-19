@@ -10,6 +10,7 @@ class FieldType(Enum):
     MAGNETIC = "MagneticField"
     DENSITY = "Density"
     METALLICITY = "GFM_Metallicity"
+    PARTICLEIDS = "ParticleIDs"
     ALL = "All"
 
     @property
@@ -26,5 +27,6 @@ _DIMS = {
     FieldType.MAGNETIC.value: [0, 3],
     FieldType.DENSITY.value: [0],
     FieldType.METALLICITY.value: [0],
+    FieldType.PARTICLEIDS.value: [0],
     FieldType.ALL.value: None,
 }
