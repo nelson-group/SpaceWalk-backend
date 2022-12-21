@@ -89,3 +89,8 @@ def get_scalar_field_experiment_symlink_path(
     return _dir.joinpath(
         f"combined_{field_type_1.value}_{field_type_2.value}_{experiment_name}_{simulation_name}.{snapshot_idx}.pvd"
     )
+
+
+def get_subhalo_dir(simulation_name: str, begin_snapshot: int, begin_idx: int) -> Path:
+    """Return snapshot dir for simulation."""
+    return DATADIR.joinpath(f"{simulation_name}/subhalos/{begin_snapshot}/{begin_idx}/")

@@ -6,18 +6,20 @@ import os
 import sys
 import traceback
 from concurrent.futures import ProcessPoolExecutor
+from pathlib import Path
 from typing import Tuple, cast
 
 import numpy as np
 import typer
 
-from tng_sv.api.download import download_snapshot, get_snapshot_amount
+from tng_sv.api.download import download_snapshot, download_subhalos, get_snapshot_amount
 from tng_sv.data.dir import (
     get_delaunay_time_symlink_path,
     get_resampled_delaunay_path,
     get_resampled_delaunay_time_symlink_path,
     get_scalar_field_experiment_path,
     get_snapshot_index_path,
+    get_subhalo_dir,
 )
 from tng_sv.data.field_type import FieldType
 from tng_sv.data.part_type import PartType
@@ -29,12 +31,14 @@ from tng_sv.data.utils import (
     create_resampled_delaunay_symlink,
     create_scalar_field_experiment_symlink,
 )
-from tng_sv.preprocessing import run_delaunay, run_resample_delaunay
+from tng_sv.preprocessing import _run_delaunay, run_delaunay, run_resample_delaunay
 from tng_sv.preprocessing.two_field_operations import scalar_product, vector_angle
 
 logger = logging.getLogger(__name__)
 
 app = typer.Typer()
+
+subhalo_app = typer.Typer()
 
 
 @app.command(name="download")
@@ -233,8 +237,29 @@ def _run(simulation: Tuple[str, int, PartType, FieldType]) -> None:
         raise exc from exc
 
 
+@subhalo_app.command(name="download")
+def download_subhalos_cmd(
+    simulation_name: str = "TNG50-1", snapshot_idx: int = 0, subhalo_idx: int = 0, step_size: int = 1
+) -> None:
+    """Download a list of subhalos based on the start parameters."""
+    download_subhalos(simulation_name, snapshot_idx, subhalo_idx, step_size)
+
+
+@subhalo_app.command(name="delaunay")
+def delaunay_subhalos_cmd(simulation_name: str = "TNG50-1", snapshot_idx: int = 0, subhalo_idx: int = 0) -> None:
+    """Run delaunay on a list of subhalos."""
+    _dir = get_subhalo_dir(simulation_name, snapshot_idx, subhalo_idx)
+    files = _dir.glob("cutout*.hdf5*")
+    for in_path in files:
+        out_path = Path(str(in_path).replace("hdf5", "pvd"))
+        if out_path.exists():
+            continue
+        _run_delaunay(in_path, out_path, PartType.GAS, FieldType.ALL)
+
+
 def cli() -> int:
     """Run the main function with typer."""
+    app.add_typer(subhalo_app, name="subhalos")
     app()
     return 0
 

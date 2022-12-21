@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 from tng_sv.api import BASEURL
 from tng_sv.api.utils import get_file, get_index, get_json, get_json_list
-from tng_sv.data.dir import get_snapshot_index_path
+from tng_sv.data.dir import get_snapshot_index_path, get_subhalo_dir
 
 
 def download_snapshot(simulation_name: str, snapshot_idx: int) -> List[str]:
@@ -38,3 +38,40 @@ def get_snapshot_amount(simulation_name: str) -> int:
     _, simulation_meta = get_index(simulations, "name", simulation_name)
     simulation = get_json(simulation_meta["url"])
     return len(get_json_list(simulation["snapshots"]))
+
+
+def download_subhalos(simulation_name: str, begin_snapshot: int, begin_idx: int, step_size: int) -> None:
+    """Download a list of subhalos that merge."""
+    _dir = get_subhalo_dir(simulation_name, begin_snapshot, begin_idx)
+    if not _dir.exists():
+        os.makedirs(_dir)
+
+    total_snapshots = get_snapshot_amount(simulation_name)
+
+    _range = _inclusive_range(begin_snapshot, total_snapshots, step_size)
+
+    simulations: List[Dict[str, Any]] = get_json(BASEURL)["simulations"]
+    _, simulation_meta = get_index(simulations, "name", simulation_name)
+    snapshots = get_json_list(get_json(simulation_meta["url"])["snapshots"])
+    subhalo_meta = get_json(get_json(snapshots[begin_snapshot]["url"])["subhalos"] + f"{begin_idx}/")
+
+    count = 0
+    for _ in tqdm(range(total_snapshots)):
+        next_subhalo = subhalo_meta["related"]["sublink_descendant"]
+        if next_subhalo is None:
+            break
+        cutout_url = subhalo_meta["cutouts"]["subhalo"]
+        if subhalo_meta["snap"] == _range[count]:
+            get_file(cutout_url, pre_dir=_dir, post_fix="." + str(subhalo_meta["snap"]))
+            count += 1
+        subhalo_meta = get_json(next_subhalo)
+
+
+def _inclusive_range(begin: int, end: int, step_size: int) -> List[int]:
+    """Return list of inclusive range."""
+    _range = list(range(begin, end, step_size))
+
+    if _range[-1] != end:
+        _range.append(end - 1)
+
+    return _range

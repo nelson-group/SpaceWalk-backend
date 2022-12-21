@@ -1,5 +1,6 @@
 """Information about preprocessing."""
 
+from pathlib import Path
 
 from tng_sv.data.dir import get_bound_info_file, get_delaunay_path, get_snapshot_combination_index_path
 from tng_sv.data.field_type import FieldType
@@ -17,12 +18,17 @@ def assert_pvpython(func):
     return _wrapper
 
 
-@assert_pvpython
 def run_delaunay(simulation_name: str, snapshot_idx: int, part_type: PartType, field_type: FieldType) -> None:
+    """Run delaunay wrapper."""
+    in_path = get_snapshot_combination_index_path(simulation_name, snapshot_idx, part_type, field_type)
+    out_path = Path(str(in_path).replace(f"_{snapshot_idx:03d}.hdf5", f"_{snapshot_idx:03d}_delaunay.pvd"))
+    _run_delaunay(in_path, out_path, part_type, field_type)
+
+
+@assert_pvpython
+def _run_delaunay(in_path: Path, out_path: Path, part_type: PartType, field_type: FieldType) -> None:
     """Run delaunay."""
     # pylint: disable=import-error,import-outside-toplevel,no-member,no-name-in-module
-    path = get_snapshot_combination_index_path(simulation_name, snapshot_idx, part_type, field_type)
-
     # Lazy import to prevent failing in non pvpython environment
     import vtk
     from paraview.modules.vtkPVVTKExtensionsFiltersPython import vtkPythonProgrammableFilter
@@ -33,28 +39,43 @@ def run_delaunay(simulation_name: str, snapshot_idx: int, part_type: PartType, f
     programmable_source.SetInformationScript("")
     programmable_source.SetOutputDataSetType(4)
     programmable_source.SetPythonPath("")
-    programmable_source.SetScript(
-        rf"""
+    script = rf"""
         from pathlib import Path
 
+        import logging
         import numpy as np
         import h5py
         from vtk.numpy_interface import algorithms as algs
 
+        logger = logging.getLogger()
 
-        f = h5py.File("{path}", 'r')
+
+        f = h5py.File("{in_path}", 'r')
 
         X = f["{part_type.value}"]['Coordinates'][:, 0]
         Y = f["{part_type.value}"]['Coordinates'][:, 1]
         Z = f["{part_type.value}"]['Coordinates'][:, 2]
-        values = f["{part_type.value}"]["{field_type.value}"][:]
-
         coordinates = algs.make_vector(X.ravel(), Y.ravel(), Z.ravel())
         output.Points = coordinates
-        output.PointData.append(values, "{field_type.value}")
+        """
+
+    if field_type == FieldType.ALL:
+        field_types = [enum for enum in FieldType if enum != FieldType.ALL]
+    else:
+        field_types = [field_type]
+    for _field_type in field_types:
+        script += rf"""
+        try:
+            {_field_type.value}_var = f["{part_type.value}"]["{_field_type.value}"][:]
+            output.PointData.append({_field_type.value}_var, "{_field_type.value}")
+        except KeyError:
+            logger.warning("No field {_field_type.value} found, skipping in delaunay.")
+        """
+
+    script += """
         f.close()
         """
-    )
+    programmable_source.SetScript(script)
 
     # create a new vtkDelaunay3D
     delaunay3d = vtkDelaunay3D()
@@ -70,7 +91,7 @@ def run_delaunay(simulation_name: str, snapshot_idx: int, part_type: PartType, f
 
     writer = vtk.vtkXMLUnstructuredGridWriter()
     writer.SetInputConnection(delaunay3d.GetOutputPort(0))
-    writer.SetFileName(str(path).replace(f"_{snapshot_idx:03d}.hdf5", f"_{snapshot_idx:03d}_delaunay.pvd"))
+    writer.SetFileName(out_path)
     writer.Write()
 
 
