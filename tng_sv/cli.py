@@ -247,14 +247,23 @@ def download_subhalos_cmd(
 
 @subhalo_app.command(name="delaunay")
 def delaunay_subhalos_cmd(simulation_name: str = "TNG50-1", snapshot_idx: int = 0, subhalo_idx: int = 0) -> None:
-    """Run delaunay on a list of subhalos."""
+    """Run delaunay on a list of subhalos in parallel."""
     _dir = get_subhalo_dir(simulation_name, snapshot_idx, subhalo_idx)
     files = _dir.glob("cutout*.hdf5*")
-    for in_path in files:
+    with ProcessPoolExecutor(max_workers=os.cpu_count()) as pool:
+        pool.map(_delaunay_subhalos_cmd, files)
+
+
+def _delaunay_subhalos_cmd(in_path: Path) -> None:
+    """Run delauny for one subhalo file."""
+    try:
         out_path = Path(str(in_path).replace("hdf5", "pvd"))
         if out_path.exists():
-            continue
+            return
         _run_delaunay(in_path, out_path, PartType.GAS, FieldType.ALL)
+    except Exception as exc:
+        logger.exception("Failed job: %(path)s with exc: %(exc)s", {"path": in_path, "exc": exc})
+        raise exc from exc
 
 
 def cli() -> int:
