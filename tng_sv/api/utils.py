@@ -2,7 +2,7 @@
 
 
 from pathlib import Path
-from typing import Any, Dict, List, Tuple, cast
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 import requests
 from requests import Response
@@ -37,7 +37,14 @@ def get_json_list(path, params=None) -> List[Dict[str, Any]]:
     return cast(List[Dict[str, Any]], get_json(path, params=params))
 
 
-def get_file(path, pre_dir: Path = Path(""), post_fix: str = "", params=None) -> str:
+def get_file(  # pylint: disable=too-many-arguments
+    path: str,
+    pre_dir: Path = Path(""),
+    pre_fix: str = "",
+    post_fix: str = "",
+    params=None,
+    override_filename: Optional[str] = None,
+) -> str:
     """Get file data.
 
     Saves a file to the local filesystem and returns the filename.
@@ -46,8 +53,8 @@ def get_file(path, pre_dir: Path = Path(""), post_fix: str = "", params=None) ->
     response = get(path, params)
 
     if "content-disposition" in response.headers:
-        filename: str = response.headers["content-disposition"].split("filename=")[1]
-        filename = str(pre_dir.joinpath(filename + post_fix))
+        filename: str = override_filename or response.headers["content-disposition"].split("filename=")[1]
+        filename = str(pre_dir.joinpath(pre_fix + filename + post_fix))
         with open(filename, "wb") as _file:
             _file.write(response.content)
         return filename  # return the filename string
