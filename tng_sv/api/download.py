@@ -65,7 +65,7 @@ def download_subhalos(simulation_name: str, begin_snapshot: int, begin_idx: int,
             get_file(
                 cutout_url,
                 pre_dir=_dir,
-                pre_fix=str(subhalo_meta["snap"]) + ".",
+                post_fix="." + str(subhalo_meta["snap"]),
                 override_filename=f"cutout_{begin_snapshot}_{begin_idx}.hdf5",
             )
             count += 1
