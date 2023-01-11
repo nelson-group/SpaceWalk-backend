@@ -66,14 +66,14 @@ def download_subhalos(simulation_name: str, begin_snapshot: int, begin_idx: int,
         count = 0
         for _ in tqdm(range(total_snapshots)):
             next_subhalo = subhalo_meta["related"]["sublink_descendant"]
-            if next_subhalo is None:
-                break
             cutout_url = subhalo_meta["cutouts"]["subhalo"]
             if subhalo_meta["snap"] == _range[count]:
                 filename = f"cutout_{begin_snapshot}_{begin_idx}_{subhalo_meta['snap']}.hdf5"
                 get_file(cutout_url, pre_dir=_dir, override_filename=filename)
                 writer.writerow([filename, json.dumps(subhalo_meta)])
                 count += 1
+            if next_subhalo is None:
+                break
             subhalo_meta = get_json(next_subhalo)
 
 
