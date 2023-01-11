@@ -160,7 +160,9 @@ def run_resample_delaunay(simulation_name: str, snapshot_idx: int, part_type: Pa
 
 
 @assert_pvpython
-def _run_center(in_path: Path, out_path: Path, center_of_mass: Tuple[int, int, int]) -> None:
+def _run_center(
+    in_path: Path, out_path: Path, center_of_mass: Tuple[int, int, int], velocity_dispersion: Tuple[int, int, int]
+) -> None:
     """Center delaunay of subhalo based on center of mass."""
     # pylint: disable=import-error,import-outside-toplevel,no-member,no-name-in-module
     com_x, com_y, com_z = center_of_mass
@@ -192,8 +194,11 @@ def _run_center(in_path: Path, out_path: Path, center_of_mass: Tuple[int, int, i
 
         output.Points = output_points
 
-        for key in inputs[0].PointData.keys():
+        for key in set(inputs[0].PointData.keys()) - set("Velocities"):
             output.PointData.append(inputs[0].PointData[key], key)
+
+        output.PointData.append(inputs[0].PointData["Velocities"] - {velocity_dispersion}, "VelocitiesCentered")
+        output.PointData.append(inputs[0].PointData["Velocities"], "Velocities")
         """
     )
     writer = vtk.vtkXMLUnstructuredGridWriter()

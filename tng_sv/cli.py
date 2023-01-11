@@ -289,7 +289,12 @@ def _center_subhalos_cmd(args: Tuple[Path, Dict[str, Any]]) -> None:
             info_json[in_path.parts[-1].replace("pvd", "hdf5")]["cm_y"],
             info_json[in_path.parts[-1].replace("pvd", "hdf5")]["cm_z"],
         )
-        _run_center(in_path, out_path, com)
+        vel_disp = (
+            info_json[in_path.parts[-1].replace("pvd", "hdf5")]["vel_x"],
+            info_json[in_path.parts[-1].replace("pvd", "hdf5")]["vel_y"],
+            info_json[in_path.parts[-1].replace("pvd", "hdf5")]["vel_z"],
+        )
+        _run_center(in_path, out_path, com, vel_disp)
 
     except Exception as exc:
         logger.exception("Failed center job: %(path)s with exc: %(exc)s", {"path": in_path, "exc": exc})
