@@ -1,6 +1,7 @@
 """Information about preprocessing."""
 
 from pathlib import Path
+from typing import Tuple
 
 from tng_sv.data.dir import get_bound_info_file, get_delaunay_path, get_snapshot_combination_index_path
 from tng_sv.data.field_type import FieldType
@@ -155,4 +156,47 @@ def run_resample_delaunay(simulation_name: str, snapshot_idx: int, part_type: Pa
     writer.SetFileName(
         str(path).replace(f"_{snapshot_idx:03d}_delaunay.pvd", f"_{snapshot_idx:03d}_resampled_delaunay.pvd")
     )
+    writer.Write()
+
+
+@assert_pvpython
+def _run_center(in_path: Path, out_path: Path, center_of_mass: Tuple[int, int, int]) -> None:
+    """Center delaunay of subhalo based on center of mass."""
+    # pylint: disable=import-error,import-outside-toplevel,no-member,no-name-in-module
+    com_x, com_y, com_z = center_of_mass
+
+    import vtk
+
+    delaunay_pvd = vtk.vtkXMLUnstructuredGridReader()
+    delaunay_pvd.SetFileName(in_path)
+    # delaunay_pvd.SetPointArrayStatus(field_type.value, 1)
+
+    from paraview.modules.vtkPVVTKExtensionsFiltersPython import vtkPythonProgrammableFilter
+
+    # create a new vtkPythonProgrammableFilter
+    _filter = vtkPythonProgrammableFilter()
+    _filter.SetInformationScript("")
+    _filter.SetOutputDataSetType(8)
+    _filter.AddInputConnection(0, delaunay_pvd.GetOutputPort(0))
+    _filter.SetPythonPath("")
+    _filter.SetScript(
+        f"""
+        import numpy as np
+        ugrid = inputs[0]
+
+        output_points = np.zeros_like(ugrid.Points)
+
+        output_points[:, 0] = ugrid.Points[:, 0] - {com_x}
+        output_points[:, 1] = ugrid.Points[:, 1] - {com_y}
+        output_points[:, 2] = ugrid.Points[:, 2] - {com_z}
+
+        output.Points = output_points
+
+        for key in inputs[0].PointData.keys():
+            output.PointData.append(inputs[0].PointData[key], key)
+        """
+    )
+    writer = vtk.vtkXMLUnstructuredGridWriter()
+    writer.SetInputConnection(_filter.GetOutputPort(0))
+    writer.SetFileName(out_path)
     writer.Write()

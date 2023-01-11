@@ -1,8 +1,11 @@
 """Module to generate data dir paths."""
 
+import csv
+import json
 import logging
 import os
 from pathlib import Path
+from typing import Any, Dict
 
 from tng_sv.data import DATADIR
 from tng_sv.data.field_type import FieldType
@@ -94,3 +97,27 @@ def get_scalar_field_experiment_symlink_path(
 def get_subhalo_dir(simulation_name: str, begin_snapshot: int, begin_idx: int) -> Path:
     """Return snapshot dir for simulation."""
     return DATADIR.joinpath(f"{simulation_name}/subhalos/{begin_snapshot}/{begin_idx}/")
+
+
+def get_subhalo_info_path(simulation_name: str, begin_snapshot: int, begin_idx: int) -> Path:
+    """Return snapshot info.csv file for simulation."""
+    return get_subhalo_dir(simulation_name, begin_snapshot, begin_idx).joinpath("info.csv")
+
+
+def get_subhalo_info_json(
+    simulation_name: str,
+    begin_snapshot: int,
+    begin_idx: int,
+) -> Dict[str, Any]:
+    """Return snapshot info.csv file for simulation."""
+    with open(
+        get_subhalo_dir(simulation_name, begin_snapshot, begin_idx).joinpath("info.csv"), mode="r", encoding="utf-8"
+    ) as info_file:
+        reader = csv.reader(info_file, delimiter=";")
+
+        _json = {}
+        for row in reader:
+            name, data = row
+            _json[name] = json.loads(data)
+
+        return _json

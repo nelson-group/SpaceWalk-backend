@@ -7,7 +7,7 @@ import sys
 import traceback
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
-from typing import Tuple, cast
+from typing import Any, Dict, Tuple, cast
 
 import numpy as np
 import typer
@@ -20,6 +20,7 @@ from tng_sv.data.dir import (
     get_scalar_field_experiment_path,
     get_snapshot_index_path,
     get_subhalo_dir,
+    get_subhalo_info_json,
 )
 from tng_sv.data.field_type import FieldType
 from tng_sv.data.part_type import PartType
@@ -31,7 +32,7 @@ from tng_sv.data.utils import (
     create_resampled_delaunay_symlink,
     create_scalar_field_experiment_symlink,
 )
-from tng_sv.preprocessing import _run_delaunay, run_delaunay, run_resample_delaunay
+from tng_sv.preprocessing import _run_center, _run_delaunay, run_delaunay, run_resample_delaunay
 from tng_sv.preprocessing.two_field_operations import scalar_product, vector_angle
 
 logger = logging.getLogger(__name__)
@@ -263,6 +264,35 @@ def _delaunay_subhalos_cmd(in_path: Path) -> None:
         _run_delaunay(in_path, out_path, PartType.GAS, FieldType.ALL)
     except Exception as exc:
         logger.exception("Failed job: %(path)s with exc: %(exc)s", {"path": in_path, "exc": exc})
+        raise exc from exc
+
+
+@subhalo_app.command(name="center")
+def center_subhalos_cmd(simulation_name: str = "TNG50-1", snapshot_idx: int = 0, subhalo_idx: int = 0) -> None:
+    """Run center on a list of subhalos in parallel."""
+    _dir = get_subhalo_dir(simulation_name, snapshot_idx, subhalo_idx)
+    files = _dir.glob("cutout*.pvd*")
+    info_json = get_subhalo_info_json(simulation_name, snapshot_idx, subhalo_idx)
+    with ProcessPoolExecutor(max_workers=os.cpu_count()) as pool:
+        pool.map(_center_subhalos_cmd, [(_file, info_json) for _file in files])
+
+
+def _center_subhalos_cmd(args: Tuple[Path, Dict[str, Any]]) -> None:
+    """Run center for one subhalo file."""
+    in_path, info_json = args
+    try:
+        out_path = Path(str(in_path).replace("cutout", "centered_cutout"))
+        if out_path.exists():
+            return
+        com = (
+            info_json[in_path.parts[-1].replace("pvd", "hdf5")]["cm_x"],
+            info_json[in_path.parts[-1].replace("pvd", "hdf5")]["cm_y"],
+            info_json[in_path.parts[-1].replace("pvd", "hdf5")]["cm_z"],
+        )
+        _run_center(in_path, out_path, com)
+
+    except Exception as exc:
+        logger.exception("Failed center job: %(path)s with exc: %(exc)s", {"path": in_path, "exc": exc})
         raise exc from exc
 
 

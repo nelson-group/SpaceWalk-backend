@@ -1,6 +1,8 @@
 """Download logic."""
 
 
+import csv
+import json
 import os
 from typing import Any, Dict, List
 
@@ -8,7 +10,7 @@ from tqdm import tqdm
 
 from tng_sv.api import BASEURL
 from tng_sv.api.utils import get_file, get_index, get_json, get_json_list
-from tng_sv.data.dir import get_snapshot_index_path, get_subhalo_dir
+from tng_sv.data.dir import get_snapshot_index_path, get_subhalo_dir, get_subhalo_info_path
 
 
 def download_snapshot(simulation_name: str, snapshot_idx: int) -> List[str]:
@@ -42,6 +44,7 @@ def get_snapshot_amount(simulation_name: str) -> int:
 
 def download_subhalos(simulation_name: str, begin_snapshot: int, begin_idx: int, step_size: int) -> None:
     """Download a list of subhalos that merge."""
+    # pylint: disable=too-many-locals
     _dir = get_subhalo_dir(simulation_name, begin_snapshot, begin_idx)
     if not _dir.exists():
         os.makedirs(_dir)
@@ -55,20 +58,23 @@ def download_subhalos(simulation_name: str, begin_snapshot: int, begin_idx: int,
     snapshots = get_json_list(get_json(simulation_meta["url"])["snapshots"])
     subhalo_meta = get_json(get_json(snapshots[begin_snapshot]["url"])["subhalos"] + f"{begin_idx}/")
 
-    count = 0
-    for _ in tqdm(range(total_snapshots)):
-        next_subhalo = subhalo_meta["related"]["sublink_descendant"]
-        if next_subhalo is None:
-            break
-        cutout_url = subhalo_meta["cutouts"]["subhalo"]
-        if subhalo_meta["snap"] == _range[count]:
-            get_file(
-                cutout_url,
-                pre_dir=_dir,
-                override_filename=f"cutout_{begin_snapshot}_{begin_idx}_{subhalo_meta['snap']}.hdf5",
-            )
-            count += 1
-        subhalo_meta = get_json(next_subhalo)
+    with open(
+        get_subhalo_info_path(simulation_name, begin_snapshot, begin_idx), mode="w+", encoding="utf-8"
+    ) as info_file:
+        writer = csv.writer(info_file, delimiter=";")
+
+        count = 0
+        for _ in tqdm(range(total_snapshots)):
+            next_subhalo = subhalo_meta["related"]["sublink_descendant"]
+            if next_subhalo is None:
+                break
+            cutout_url = subhalo_meta["cutouts"]["subhalo"]
+            if subhalo_meta["snap"] == _range[count]:
+                filename = f"cutout_{begin_snapshot}_{begin_idx}_{subhalo_meta['snap']}.hdf5"
+                get_file(cutout_url, pre_dir=_dir, override_filename=filename)
+                writer.writerow([filename, json.dumps(subhalo_meta)])
+                count += 1
+            subhalo_meta = get_json(next_subhalo)
 
 
 def _inclusive_range(begin: int, end: int, step_size: int) -> List[int]:
