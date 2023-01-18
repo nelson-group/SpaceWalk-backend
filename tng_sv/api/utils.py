@@ -13,7 +13,7 @@ from tng_sv.api import HEADERS
 logger = logging.getLogger(__name__)
 
 
-def format_bytes(size):
+def format_bytes(size: float) -> Tuple[float, str]:
     """Format bytes."""
     power = 2**10
     number = 0
@@ -83,7 +83,7 @@ def get_file(  # pylint: disable=too-many-arguments
         print("File cached, skipping download.")
         return filename
 
-    print(f"Downloading: {format_bytes(response.headers['content-length'])}")
+    print(f"Downloading: {format_bytes(float(response.headers['content-length']))}")
     response = get(path, params)
 
     if "content-disposition" in response.headers:
