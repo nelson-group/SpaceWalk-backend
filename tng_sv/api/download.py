@@ -85,7 +85,7 @@ def download_subhalos(
 
                 # Download parent halo
                 if parent_halo:
-                    parent_halo_url = subhalo_meta["citouts"]["parent_halo"]
+                    parent_halo_url = subhalo_meta["cutouts"]["parent_halo"]
                     filename = f"cutout_parent_halo_{begin_snapshot}_{begin_idx}_{subhalo_meta['snap']}.hdf5"
                     get_file(parent_halo_url, pre_dir=_dir, override_filename=filename)
             if next_subhalo is None:
