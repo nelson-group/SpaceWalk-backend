@@ -117,22 +117,22 @@ def _inclusive_range(begin: int, end: int, step_size: int) -> List[int]:
     return _range
 
 
-def find_subhalo_recursive(args: Tuple[str, int]) -> None:
+def find_subhalo_recursive(args: Tuple[str, int, float]) -> None:
     """Find subhalo recursively."""
-    url, wanted_snapshot = args
+    url, wanted_snapshot, min_mass_stars = args
     subhalo_meta = get_json(url)
-    if int(subhalo_meta["primary_flag"]) == 0 or float(subhalo_meta["mass_stars"]) < 10:
+    if int(subhalo_meta["primary_flag"]) == 0 or float(subhalo_meta["mass_stars"]) < min_mass_stars:
         return
 
     if subhalo_meta["snap"] == wanted_snapshot:
-        print(f"Match: {subhalo_meta['id']}")
+        print(f"Match: {subhalo_meta['id']} - Mass stars: {subhalo_meta['mass_stars']}")
         return
 
     prev_subhalo = subhalo_meta["related"]["sublink_progenitor"]
-    find_subhalo_recursive((prev_subhalo, wanted_snapshot))
+    find_subhalo_recursive((prev_subhalo, wanted_snapshot, min_mass_stars))
 
 
-def get_subhalos_from_subbox(simulation_name: str, subbox_idx: int, snapshot_idx: int) -> None:
+def get_subhalos_from_subbox(simulation_name: str, subbox_idx: int, snapshot_idx: int, min_mass_stars: float) -> None:
     """Get subhalos in subbox with correct attributes."""
     # pylint: disable=too-many-locals
 
@@ -152,7 +152,7 @@ def get_subhalos_from_subbox(simulation_name: str, subbox_idx: int, snapshot_idx
     snapshots = get_json_list(get_json(simulation_meta["url"])["snapshots"])
     subhalos_base_url = get_json(snapshots[entry_snapshot]["url"])["subhalos"]
 
-    args = [(subhalos_base_url + f"{subhalo}/", snapshot_idx) for subhalo in hdf5_file["SubhaloIDs"]]
+    args = [(subhalos_base_url + f"{subhalo}/", snapshot_idx, min_mass_stars) for subhalo in hdf5_file["SubhaloIDs"]]
     cpus = os.cpu_count()
     with ThreadPoolExecutor(max_workers=(cpus // 2) if cpus else 1) as pool:
         _ = list(tqdm(pool.map(find_subhalo_recursive, args), total=len(args)))

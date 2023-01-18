@@ -326,9 +326,11 @@ def _center_subhalos_cmd(args: Tuple[Path, Dict[str, Any]]) -> None:
 
 
 @subhalo_app.command(name="find")
-def find_subhalos_cmd(simulation_name: str = "TNG50-1", subbox_idx: int = 1, snapshot_idx: int = 0) -> None:
+def find_subhalos_cmd(
+    simulation_name: str = "TNG50-1", subbox_idx: int = 1, snapshot_idx: int = 0, min_mass_stars: float = 10.0
+) -> None:
     """Find subhalos command."""
-    get_subhalos_from_subbox(simulation_name, subbox_idx, snapshot_idx)
+    get_subhalos_from_subbox(simulation_name, subbox_idx, snapshot_idx, min_mass_stars)
 
 
 @plot_app.command(name="subhalo-com")
