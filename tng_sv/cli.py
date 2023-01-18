@@ -32,6 +32,7 @@ from tng_sv.data.utils import (
     create_resampled_delaunay_symlink,
     create_scalar_field_experiment_symlink,
 )
+from tng_sv.plot import plot_subhalo_com_against_cob
 from tng_sv.preprocessing import _run_center, _run_delaunay, run_delaunay, run_resample_delaunay
 from tng_sv.preprocessing.two_field_operations import scalar_product, vector_angle
 
@@ -40,6 +41,7 @@ logger = logging.getLogger(__name__)
 app = typer.Typer()
 
 subhalo_app = typer.Typer()
+plot_app = typer.Typer()
 
 
 @app.command(name="download")
@@ -301,9 +303,18 @@ def _center_subhalos_cmd(args: Tuple[Path, Dict[str, Any]]) -> None:
         raise exc from exc
 
 
+@plot_app.command(name="subhalo-com")
+def cmd_plot_subhalo_com_against_cob(
+    simulation_name: str = "TNG50-1", snapshot_idx: int = 0, subhalo_idx: int = 0
+) -> None:
+    """Create plot for distance between com and cob."""
+    plot_subhalo_com_against_cob(simulation_name, snapshot_idx, subhalo_idx)
+
+
 def cli() -> int:
     """Run the main function with typer."""
     app.add_typer(subhalo_app, name="subhalos")
+    app.add_typer(plot_app, name="plot")
     app()
     return 0
 

@@ -19,6 +19,7 @@ dependencies = [
     "numpy",
     "h5py",
     "vtk",
+    "matplotlib",
 ]
 
 [project.optional-dependencies]
