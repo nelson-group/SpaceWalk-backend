@@ -85,9 +85,12 @@ def download_subhalos(
 
                 # Download parent halo
                 if parent_halo:
+                    parent_dir = _dir.joinpath("parent/")
+                    if not parent_dir.exists():
+                        os.makedirs(parent_dir)
                     parent_halo_url = subhalo_meta["cutouts"]["parent_halo"]
                     filename = f"cutout_parent_halo_{begin_snapshot}_{begin_idx}_{subhalo_meta['snap']}.hdf5"
-                    get_file(parent_halo_url, pre_dir=_dir, override_filename=filename)
+                    get_file(parent_halo_url, pre_dir=parent_dir, override_filename=filename)
             if next_subhalo is None:
                 break
             subhalo_meta = get_json(next_subhalo)
