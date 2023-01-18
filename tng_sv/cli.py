@@ -12,9 +12,10 @@ from typing import Any, Dict, Tuple, cast
 import numpy as np
 import typer
 
-from tng_sv.api.download import download_snapshot, download_subhalos, get_snapshot_amount
+from tng_sv.api.download import download_halo, download_snapshot, download_subhalos, get_snapshot_amount
 from tng_sv.data.dir import (
     get_delaunay_time_symlink_path,
+    get_halo_dir,
     get_resampled_delaunay_path,
     get_resampled_delaunay_time_symlink_path,
     get_scalar_field_experiment_path,
@@ -40,6 +41,7 @@ logger = logging.getLogger(__name__)
 
 app = typer.Typer()
 
+halo_app = typer.Typer()
 subhalo_app = typer.Typer()
 plot_app = typer.Typer()
 
@@ -311,8 +313,24 @@ def cmd_plot_subhalo_com_against_cob(
     plot_subhalo_com_against_cob(simulation_name, snapshot_idx, subhalo_idx)
 
 
+@halo_app.command(name="download")
+def download_halo_cmd(simulation_name: str = "TNG50-1", snapshot_idx: int = 0, halo_idx: int = 0) -> None:
+    """Download a halo."""
+    download_halo(simulation_name, snapshot_idx, halo_idx)
+
+
+@halo_app.command(name="delaunay")
+def delaunay_halos_cmd(simulation_name: str = "TNG50-1", snapshot_idx: int = 0, halo_idx: int = 0) -> None:
+    """Run delaunay on a list of halos in parallel."""
+    _dir = get_halo_dir(simulation_name, snapshot_idx, halo_idx)
+    files = _dir.glob("cutout*.hdf5*")
+    with ProcessPoolExecutor(max_workers=os.cpu_count()) as pool:
+        pool.map(_delaunay_subhalos_cmd, files)
+
+
 def cli() -> int:
     """Run the main function with typer."""
+    app.add_typer(halo_app, name="halos")
     app.add_typer(subhalo_app, name="subhalos")
     app.add_typer(plot_app, name="plot")
     app()

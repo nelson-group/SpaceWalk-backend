@@ -95,8 +95,13 @@ def get_scalar_field_experiment_symlink_path(
 
 
 def get_subhalo_dir(simulation_name: str, begin_snapshot: int, begin_idx: int) -> Path:
-    """Return snapshot dir for simulation."""
+    """Return subhalo dir for simulation."""
     return DATADIR.joinpath(f"{simulation_name}/subhalos/{begin_snapshot}/{begin_idx}/")
+
+
+def get_halo_dir(simulation_name: str, snapshot_idx: int, halo_idx: int) -> Path:
+    """Return halo dir for simulation."""
+    return DATADIR.joinpath(f"{simulation_name}/halos/{snapshot_idx}/{halo_idx}/")
 
 
 def get_subhalo_info_path(simulation_name: str, begin_snapshot: int, begin_idx: int) -> Path:

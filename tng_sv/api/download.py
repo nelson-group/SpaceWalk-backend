@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 from tng_sv.api import BASEURL
 from tng_sv.api.utils import get_file, get_index, get_json, get_json_list
-from tng_sv.data.dir import get_snapshot_index_path, get_subhalo_dir, get_subhalo_info_path
+from tng_sv.data.dir import get_halo_dir, get_snapshot_index_path, get_subhalo_dir, get_subhalo_info_path
 
 
 def download_snapshot(simulation_name: str, snapshot_idx: int) -> List[str]:
@@ -75,6 +75,20 @@ def download_subhalos(simulation_name: str, begin_snapshot: int, begin_idx: int,
             if next_subhalo is None:
                 break
             subhalo_meta = get_json(next_subhalo)
+
+
+def download_halo(simulation_name: str, snapshot_idx: int, halo_idx: int) -> None:
+    """Download a halo."""
+    # pylint: disable=too-many-locals
+    _dir = get_halo_dir(simulation_name, snapshot_idx, halo_idx)
+    if not _dir.exists():
+        os.makedirs(_dir)
+
+    simulations: List[Dict[str, Any]] = get_json(BASEURL)["simulations"]
+    _, simulation_meta = get_index(simulations, "name", simulation_name)
+    snapshots = get_json_list(get_json(simulation_meta["url"])["snapshots"])
+    halo_url = snapshots[snapshot_idx]["url"] + f"halos/{halo_idx}/cutout.hdf5"
+    get_file(halo_url, pre_dir=_dir)
 
 
 def _inclusive_range(begin: int, end: int, step_size: int) -> List[int]:
