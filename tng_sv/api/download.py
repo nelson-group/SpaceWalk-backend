@@ -88,7 +88,7 @@ def download_halo(simulation_name: str, snapshot_idx: int, halo_idx: int) -> Non
     _, simulation_meta = get_index(simulations, "name", simulation_name)
     snapshots = get_json_list(get_json(simulation_meta["url"])["snapshots"])
     halo_url = snapshots[snapshot_idx]["url"] + f"halos/{halo_idx}/cutout.hdf5"
-    get_file(halo_url, pre_dir=_dir)
+    get_file(halo_url.replace("http://", "https://"), pre_dir=_dir)
 
 
 def _inclusive_range(begin: int, end: int, step_size: int) -> List[int]:

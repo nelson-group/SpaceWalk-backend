@@ -21,6 +21,17 @@ def get(path, params=None) -> Response:
     return response
 
 
+def head(path, params=None) -> Response:
+    """Generic get wrapper to set correct headers."""
+    # make HTTP GET request to path
+    response = requests.head(path, params=params, headers=HEADERS, timeout=300, allow_redirects=True)
+
+    # raise exception if response code is not HTTP SUCCESS (200)
+    response.raise_for_status()
+
+    return response
+
+
 def get_json(path, params=None) -> Dict[str, Any]:
     """Get json data.
 
@@ -50,6 +61,8 @@ def get_file(  # pylint: disable=too-many-arguments
     Saves a file to the local filesystem and returns the filename.
     Raise TypeError if no file is in response.
     """
+    response = head(path, params)
+    print(f"Downloading: {response.headers['content-length']} bytes")
     response = get(path, params)
 
     if "content-disposition" in response.headers:
