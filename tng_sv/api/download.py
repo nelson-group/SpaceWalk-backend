@@ -4,7 +4,6 @@
 import csv
 import json
 import os
-from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Any, Dict, List, Tuple
 
 import h5py
@@ -151,6 +150,5 @@ def get_subhalos_from_subbox(simulation_name: str, subbox_idx: int, snapshot_idx
     snapshots = get_json_list(get_json(simulation_meta["url"])["snapshots"])
     subhalos_base_url = get_json(snapshots[entry_snapshot]["url"])["subhalos"]
 
-    args = [(subhalos_base_url + f"{subhalo}/", snapshot_idx) for subhalo in hdf5_file["SubhaloIDs"]]
-    with ThreadPoolExecutor(max_workers=1) as pool:
-        pool.map(find_subhalo_recursive, args)
+    for subhalo in tqdm(hdf5_file["SubhaloIDs"]):
+        find_subhalo_recursive((subhalos_base_url + f"{subhalo}/", snapshot_idx))
