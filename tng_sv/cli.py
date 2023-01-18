@@ -12,7 +12,13 @@ from typing import Any, Dict, Tuple, cast
 import numpy as np
 import typer
 
-from tng_sv.api.download import download_halo, download_snapshot, download_subhalos, get_snapshot_amount
+from tng_sv.api.download import (
+    download_halo,
+    download_snapshot,
+    download_subhalos,
+    get_snapshot_amount,
+    get_subhalos_from_subbox,
+)
 from tng_sv.data.dir import (
     get_delaunay_time_symlink_path,
     get_halo_dir,
@@ -26,6 +32,7 @@ from tng_sv.data.dir import (
 from tng_sv.data.field_type import FieldType
 from tng_sv.data.part_type import PartType
 from tng_sv.data.utils import (
+    bounds,
     combine_snapshot,
     create_delaunay_copy,
     create_delaunay_symlink,
@@ -83,6 +90,15 @@ def resample(
 ) -> None:
     """Download a snapshot."""
     run_resample_delaunay(simulation_name, snapshot_idx, part_type, field_type)
+
+
+@app.command(name="bounds")
+def bounds_cmd(
+    simulation_name: str = "TNG50-1",
+    part_type: PartType = cast(PartType, "PartType0"),
+) -> None:
+    """Generate bound.pvd for simulation."""
+    bounds(simulation_name, part_type)
 
 
 @app.command()
@@ -244,10 +260,14 @@ def _run(simulation: Tuple[str, int, PartType, FieldType]) -> None:
 
 @subhalo_app.command(name="download")
 def download_subhalos_cmd(
-    simulation_name: str = "TNG50-1", snapshot_idx: int = 0, subhalo_idx: int = 0, step_size: int = 1
+    simulation_name: str = "TNG50-1",
+    snapshot_idx: int = 0,
+    subhalo_idx: int = 0,
+    step_size: int = 1,
+    parent_halo: bool = False,
 ) -> None:
     """Download a list of subhalos based on the start parameters."""
-    download_subhalos(simulation_name, snapshot_idx, subhalo_idx, step_size)
+    download_subhalos(simulation_name, snapshot_idx, subhalo_idx, step_size, parent_halo)
 
 
 @subhalo_app.command(name="delaunay")
@@ -303,6 +323,12 @@ def _center_subhalos_cmd(args: Tuple[Path, Dict[str, Any]]) -> None:
     except Exception as exc:
         logger.exception("Failed center job: %(path)s with exc: %(exc)s", {"path": in_path, "exc": exc})
         raise exc from exc
+
+
+@subhalo_app.command(name="find")
+def find_subhalos_cmd(simulation_name: str = "TNG50-1", subbox_idx: int = 1, snapshot_idx: int = 0) -> None:
+    """Find subhalos command."""
+    get_subhalos_from_subbox(simulation_name, subbox_idx, snapshot_idx)
 
 
 @plot_app.command(name="subhalo-com")

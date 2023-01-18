@@ -8,7 +8,9 @@ from pathlib import Path
 
 import h5py
 import numpy as np
+import vtk
 
+from tng_sv.api.download import download_snapshot
 from tng_sv.data.dir import (
     get_bound_info_file,
     get_delaunay_path,
@@ -17,6 +19,7 @@ from tng_sv.data.dir import (
     get_resampled_delaunay_time_symlink_path,
     get_scalar_field_experiment_path,
     get_scalar_field_experiment_symlink_path,
+    get_simulation_dir,
     get_snapshot_index_path,
 )
 from tng_sv.data.field_type import FieldType
@@ -153,3 +156,40 @@ def create_scalar_field_experiment_symlink(
         return
 
     os.symlink(data_path, symlink_path)
+
+
+def bounds(simulation_name: str, part_type: PartType) -> None:
+    """Generate bounds.pvd file simulation.
+
+    Requires downloading one snapshot.
+    """
+    # pylint: disable=no-member
+    download_snapshot(simulation_name, 0)
+
+    _dir = get_snapshot_index_path(simulation_name, 0)
+    simulation_dir = get_simulation_dir(simulation_name)
+
+    file_names = list(_dir.glob("snap*.hdf5"))
+    if len(file_names) == 0:
+        raise ValueError(f"No files found to combine. Searched at: {_dir}")
+
+    coordinates = np.zeros((0, 3))
+    for file_name in file_names:
+        with h5py.File(file_name, "r") as f_in:
+            coordinates = np.concatenate((coordinates, f_in[part_type.value]["Coordinates"]), axis=0)
+
+    _min = np.min(coordinates, axis=0)
+    _max = np.max(coordinates, axis=0)
+    distance = _max - _min
+
+    print(f"min {_min}")
+    print(f"max {_max}")
+    print(f"distance {distance}")
+
+    outline_source = vtk.vtkOutlineSource()
+    outline_source.SetBounds(np.dstack((_min, _max)).flatten())
+
+    writer = vtk.vtkXMLPolyDataWriter()
+    writer.SetInputConnection(outline_source.GetOutputPort(0))
+    writer.SetFileName(simulation_dir.joinpath("bounds.pvd"))
+    writer.Write()

@@ -1,6 +1,7 @@
 """API utils."""
 
 
+import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, cast
 
@@ -8,6 +9,19 @@ import requests
 from requests import Response
 
 from tng_sv.api import HEADERS
+
+logger = logging.getLogger(__name__)
+
+
+def format_bytes(size):
+    """Format bytes."""
+    power = 2**10
+    number = 0
+    power_labels = {0: "", 1: "kilo", 2: "mega", 3: "giga", 4: "tera"}
+    while size > power:
+        size /= power
+        number += 1
+    return size, power_labels[number] + "bytes"
 
 
 def get(path, params=None) -> Response:
@@ -55,6 +69,7 @@ def get_file(  # pylint: disable=too-many-arguments
     post_fix: str = "",
     params=None,
     override_filename: Optional[str] = None,
+    force: bool = False,
 ) -> str:
     """Get file data.
 
@@ -62,12 +77,16 @@ def get_file(  # pylint: disable=too-many-arguments
     Raise TypeError if no file is in response.
     """
     response = head(path, params)
-    print(f"Downloading: {response.headers['content-length']} bytes")
+    filename: str = override_filename or response.headers["content-disposition"].split("filename=")[1]
+    filename = str(pre_dir.joinpath(pre_fix + filename + post_fix))
+    if Path(filename).exists() and not force:
+        print("File cached, skipping download.")
+        return filename
+
+    print(f"Downloading: {format_bytes(response.headers['content-length'])}")
     response = get(path, params)
 
     if "content-disposition" in response.headers:
-        filename: str = override_filename or response.headers["content-disposition"].split("filename=")[1]
-        filename = str(pre_dir.joinpath(pre_fix + filename + post_fix))
         with open(filename, "wb") as _file:
             _file.write(response.content)
         return filename  # return the filename string

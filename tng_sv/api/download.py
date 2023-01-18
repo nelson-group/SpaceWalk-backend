@@ -4,15 +4,21 @@
 import csv
 import json
 import os
-from typing import Any, Dict, List
+from concurrent.futures.thread import ThreadPoolExecutor
+from typing import Any, Dict, List, Tuple
 
 import h5py
-
 from tqdm import tqdm
 
 from tng_sv.api import BASEURL
 from tng_sv.api.utils import get_file, get_index, get_json, get_json_list
-from tng_sv.data.dir import get_halo_dir, get_snapshot_index_path, get_subhalo_dir, get_subhalo_info_path
+from tng_sv.data.dir import (
+    get_halo_dir,
+    get_simulation_dir,
+    get_snapshot_index_path,
+    get_subhalo_dir,
+    get_subhalo_info_path,
+)
 
 
 def download_snapshot(simulation_name: str, snapshot_idx: int) -> List[str]:
@@ -44,7 +50,9 @@ def get_snapshot_amount(simulation_name: str) -> int:
     return len(get_json_list(simulation["snapshots"]))
 
 
-def download_subhalos(simulation_name: str, begin_snapshot: int, begin_idx: int, step_size: int) -> None:
+def download_subhalos(
+    simulation_name: str, begin_snapshot: int, begin_idx: int, step_size: int, parent_halo: bool
+) -> None:
     """Download a list of subhalos that merge."""
     # pylint: disable=too-many-locals
     _dir = get_subhalo_dir(simulation_name, begin_snapshot, begin_idx)
@@ -74,6 +82,12 @@ def download_subhalos(simulation_name: str, begin_snapshot: int, begin_idx: int,
                 get_file(cutout_url, pre_dir=_dir, override_filename=filename)
                 writer.writerow([filename, json.dumps(subhalo_meta)])
                 count += 1
+
+                # Download parent halo
+                if parent_halo:
+                    parent_halo_url = subhalo_meta["citouts"]["parent_halo"]
+                    filename = f"cutout_parent_halo_{begin_snapshot}_{begin_idx}_{subhalo_meta['snap']}.hdf5"
+                    get_file(parent_halo_url, pre_dir=_dir, override_filename=filename)
             if next_subhalo is None:
                 break
             subhalo_meta = get_json(next_subhalo)
@@ -103,26 +117,40 @@ def _inclusive_range(begin: int, end: int, step_size: int) -> List[int]:
     return _range
 
 
-def get_subhalos_from_subbox(simulation_name, begin_snapshot, begin_idx) -> None:
-    f = h5py.File("{in_path}", 'r')
+def find_subhalo_recursive(args: Tuple[str, int]) -> None:
+    """Find subhalo recursively."""
+    url, wanted_snapshot = args
+    subhalo_meta = get_json(url)
+    if int(subhalo_meta["primary_flag"]) == 0 or subhalo_meta["mass_stars"] < 10:
+        return
+
+    if subhalo_meta["snap"] == wanted_snapshot:
+        print(f"Match: {subhalo_meta['id']}")
+        return
+
+    prev_subhalo = subhalo_meta["related"]["sublink_progenitor"]
+    find_subhalo_recursive((prev_subhalo, wanted_snapshot))
 
 
-    subhalo_dir = get_subhalo_dir(simulation_name, begin_snapshot, begin_idx)
+def get_subhalos_from_subbox(simulation_name: str, subbox_idx: int, snapshot_idx: int) -> None:
+    """Get subhalos in subbox with correct attributes."""
 
+    simulation_dir = get_simulation_dir(simulation_name)
+    if not simulation_dir.exists():
+        os.makedirs(simulation_dir)
 
     simulations: List[Dict[str, Any]] = get_json(BASEURL)["simulations"]
     _, simulation_meta = get_index(simulations, "name", simulation_name)
+    simulation = get_json(simulation_meta["url"])
+    subbox_subhalo_list_url = simulation["files"][f"subbox_subhalo_list_{subbox_idx}"]
+
+    filename = get_file(subbox_subhalo_list_url, pre_dir=simulation_dir)
+    hdf5_file = h5py.File(filename, "r")
+
+    entry_snapshot = int(simulation["num_snapshots"]) - 1
     snapshots = get_json_list(get_json(simulation_meta["url"])["snapshots"])
+    subhalos_base_url = get_json(snapshots[entry_snapshot]["url"])["subhalos"]
 
-    subhalo_meta = get_json(get_json(snapshots[begin_snapshot]["url"])["subhalos"] + f"{begin_idx}/")
-
-    for subhalo in f["SubhaloIDs"]:
-
-
-# Download Linkfile
-# Download subhalo meta based on linkfile
-# Filter for primaryflag = 1
-# Follow to target snapshot for all subhalos
-# Check if primaryflag = 1
-
-# print projection/id
+    args = [(subhalos_base_url + f"{subhalo}/", snapshot_idx) for subhalo in hdf5_file["SubhaloIDs"]]
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        pool.map(find_subhalo_recursive, args)
