@@ -6,6 +6,8 @@ import json
 import os
 from typing import Any, Dict, List
 
+import h5py
+
 from tqdm import tqdm
 
 from tng_sv.api import BASEURL
@@ -99,3 +101,28 @@ def _inclusive_range(begin: int, end: int, step_size: int) -> List[int]:
         _range.append(end - 1)
 
     return _range
+
+
+def get_subhalos_from_subbox(simulation_name, begin_snapshot, begin_idx) -> None:
+    f = h5py.File("{in_path}", 'r')
+
+
+    subhalo_dir = get_subhalo_dir(simulation_name, begin_snapshot, begin_idx)
+
+
+    simulations: List[Dict[str, Any]] = get_json(BASEURL)["simulations"]
+    _, simulation_meta = get_index(simulations, "name", simulation_name)
+    snapshots = get_json_list(get_json(simulation_meta["url"])["snapshots"])
+
+    subhalo_meta = get_json(get_json(snapshots[begin_snapshot]["url"])["subhalos"] + f"{begin_idx}/")
+
+    for subhalo in f["SubhaloIDs"]:
+
+
+# Download Linkfile
+# Download subhalo meta based on linkfile
+# Filter for primaryflag = 1
+# Follow to target snapshot for all subhalos
+# Check if primaryflag = 1
+
+# print projection/id
