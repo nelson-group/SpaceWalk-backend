@@ -5,12 +5,29 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, cast
 
-import requests
-from requests import Response
+from requests import Response, Session
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 from tng_sv.api import HEADERS
 
 logger = logging.getLogger(__name__)
+
+
+def configure_retry_session(retries: int = 5) -> Session:
+    """Configure request Session with retry behaviour."""
+    adapter = HTTPAdapter(
+        max_retries=Retry(
+            total=retries, backoff_factor=1, status_forcelist=[502, 503, 504], allowed_methods=["HEAD", "GET", "POST"]
+        )
+    )
+    _session = Session()
+    _session.mount("https://", adapter)
+    _session.mount("http://", adapter)
+    return _session
+
+
+session = configure_retry_session()
 
 
 def format_bytes(size: float) -> Tuple[float, str]:
@@ -27,7 +44,7 @@ def format_bytes(size: float) -> Tuple[float, str]:
 def get(path, params=None) -> Response:
     """Generic get wrapper to set correct headers."""
     # make HTTP GET request to path
-    response = requests.get(path, params=params, headers=HEADERS, timeout=300)
+    response = session.get(path, params=params, headers=HEADERS, timeout=300)
 
     # raise exception if response code is not HTTP SUCCESS (200)
     response.raise_for_status()
@@ -38,7 +55,7 @@ def get(path, params=None) -> Response:
 def head(path, params=None) -> Response:
     """Generic get wrapper to set correct headers."""
     # make HTTP GET request to path
-    response = requests.head(path, params=params, headers=HEADERS, timeout=300, allow_redirects=True)
+    response = session.head(path, params=params, headers=HEADERS, timeout=300, allow_redirects=True)
 
     # raise exception if response code is not HTTP SUCCESS (200)
     response.raise_for_status()

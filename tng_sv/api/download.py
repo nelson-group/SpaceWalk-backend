@@ -4,6 +4,7 @@
 import csv
 import json
 import os
+from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Any, Dict, List, Tuple
 
 import h5py
@@ -120,7 +121,7 @@ def find_subhalo_recursive(args: Tuple[str, int]) -> None:
     """Find subhalo recursively."""
     url, wanted_snapshot = args
     subhalo_meta = get_json(url)
-    if int(subhalo_meta["primary_flag"]) == 0 or subhalo_meta["mass_stars"] < 10:
+    if int(subhalo_meta["primary_flag"]) == 0 or float(subhalo_meta["mass_stars"]) < 10:
         return
 
     if subhalo_meta["snap"] == wanted_snapshot:
@@ -133,6 +134,7 @@ def find_subhalo_recursive(args: Tuple[str, int]) -> None:
 
 def get_subhalos_from_subbox(simulation_name: str, subbox_idx: int, snapshot_idx: int) -> None:
     """Get subhalos in subbox with correct attributes."""
+    # pylint: disable=too-many-locals
 
     simulation_dir = get_simulation_dir(simulation_name)
     if not simulation_dir.exists():
@@ -150,5 +152,7 @@ def get_subhalos_from_subbox(simulation_name: str, subbox_idx: int, snapshot_idx
     snapshots = get_json_list(get_json(simulation_meta["url"])["snapshots"])
     subhalos_base_url = get_json(snapshots[entry_snapshot]["url"])["subhalos"]
 
-    for subhalo in tqdm(hdf5_file["SubhaloIDs"]):
-        find_subhalo_recursive((subhalos_base_url + f"{subhalo}/", snapshot_idx))
+    args = [(subhalos_base_url + f"{subhalo}/", snapshot_idx) for subhalo in hdf5_file["SubhaloIDs"]]
+    cpus = os.cpu_count()
+    with ThreadPoolExecutor(max_workers=(cpus // 2) if cpus else 1) as pool:
+        _ = list(tqdm(pool.map(find_subhalo_recursive, args), total=len(args)))
