@@ -22,6 +22,7 @@ subhaloIds = [0, 100, 500, 1000, 3000]
 print(GroupFirstSub.shape)
 
 fig = plt.figure()
+plt.ion()
 ax = fig.add_subplot(projection='3d')
 ax.set_xlabel('X Label')
 ax.set_ylabel('Y Label')
@@ -57,4 +58,4 @@ for subhaloId in subhaloIds:
         ax.scatter(s[:, 0], s[:, 1], s[:, 2],s=0.1)
         ax.scatter(piecewisePos[:, 0], piecewisePos[:, 1], piecewisePos[:, 2],marker='x')
 
-plt.show() # if they break down and have strange ways, thats based on the data: https://www.tng-project.org/data/docs/scripts/
+plt.show(block=True)# if they break down and have strange ways, thats based on the data: https://www.tng-project.org/data/docs/scripts/
