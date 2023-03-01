@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from astropy.cosmology import FlatLambdaCDM
 import astropy.units as u
+from tqdm import tqdm
 
 baseSnapId = 99
 basePath = 'D:/VMShare/Documents/data/'
@@ -22,7 +23,7 @@ GroupFirstSub = il.groupcat.loadHalos(basePath, baseSnapId, fields=['GroupFirstS
 
 fields = ['SubhaloPos', 'SubfindID', 'SnapNum', 'SubhaloVel', "SubhaloVelDisp"]
 
-subhaloIds = [0, 100, 500, 1000, 3000]
+subhaloIds = np.linspace(0, 3000, 100, dtype=int)
 print(GroupFirstSub.shape)
 
 
@@ -40,14 +41,14 @@ ax.set_ylim(extends)
 ax.set_zlim(extends)
 travelCoef = np.zeros(len(subhaloIds))
 anzSnapnums = np.zeros(len(subhaloIds))
-for idx, subhaloId in enumerate(subhaloIds):
+for idx, subhaloId in tqdm(enumerate(subhaloIds)):
     tree = il.sublink.loadTree(basePath, baseSnapId, GroupFirstSub[subhaloId], fields=fields, onlyMPB=True)
     subhaloSnapNums = np.flip(np.array(tree["SnapNum"]), axis=0)
     anzSnapnums[idx] = len(subhaloSnapNums)
     subhaloPos = np.flip(np.array(tree["SubhaloPos"]), axis=0)
     subhaloVel = np.flip(np.array(tree["SubhaloVel"]), axis=0) # km sqrt(a) / s (spatial vel, see doc) 3.2408e-11 = km -> kpc
     subhaloVel = subhaloVel * 3.154e+7 / 3.086e+16 # calc km/s to kpc/a
-    print(tree["SubhaloVelDisp"] * 3.154e+7 / 3.086e+16)
+    # print(tree["SubhaloVelDisp"] * 3.154e+7 / 3.086e+16)
     traveledDistance = 0
     for snapId in range(len(subhaloSnapNums)-1):
         piecewiseSnapNums = subhaloSnapNums[snapId:snapId+2]
@@ -73,7 +74,7 @@ for idx, subhaloId in enumerate(subhaloIds):
         difPos = np.linalg.norm(np.diff(piecewisePos, axis=0))
         tempo = np.linalg.norm(np.sum(piecewiseVelOld, axis=0) / 2)
         expectedTime = difPos / tempo
-        print(f"{snapId} for subhalo {subhaloId}: {expectedTime / timeDif}")
+        # print(f"{snapId} for subhalo {subhaloId}: {expectedTime / timeDif}")
 
         traveledDistance += np.sum(np.linalg.norm(np.diff(s,axis=0), axis=1))
         # dif0 = s[0] - piecewisePos[0]
@@ -86,4 +87,9 @@ for idx, subhaloId in enumerate(subhaloIds):
 print(travelCoef)
 print(travelCoef / boxSize)
 print(travelCoef / (30 * anzSnapnums))
-plt.show(block=True)# if they break down and have strange ways, thats based on the data: https://www.tng-project.org/data/docs/scripts/
+print(np.median(travelCoef))
+print(np.median(travelCoef / boxSize))
+print(np.median(travelCoef / np.linalg.norm([boxSize]*3)))
+print(np.median(travelCoef / (30 * anzSnapnums)))
+
+plt.show(block=True) # if they break down and have strange ways, thats based on the data: https://www.tng-project.org/data/docs/scripts/
