@@ -10,19 +10,22 @@ wget -nd -nc -nv -e robots=off -l 1 -r -A hdf5 --content-disposition --header="A
 
 done
 
- for i in {25..75}; do
+ for i in {0..99}; do
+ if [ ! -d groups_0${i} ]
+then
 mkdir -p groups_0${i}
 cd groups_0$i
 wget -nd -nc -nv -e robots=off -l 1 -r -A hdf5 --content-disposition --header="API-Key: a64541c838c1bfe5a871e69d2cd1ab25" "http://www.tng-project.org/api/TNG50-4/files/groupcat-$i/?format=api"
 cd ..
+fi
 done
 
- for i in {25..75}; do
-wget --content-disposition --header="API-Key: a64541c838c1bfe5a871e69d2cd1ab25" "http://www.tng-project.org/api/TNG50-4/files/offsets.${i}.hdf5"
+ for i in {0..99}; do
+wget -nc --content-disposition --header="API-Key: a64541c838c1bfe5a871e69d2cd1ab25" "http://www.tng-project.org/api/TNG50-4/files/offsets.${i}.hdf5"
 done
 
 $dirName = "snapdir_"
- for i in {75..75}; do
+ for i in {99..99}; do
 mkdir -p snapdir_0${i}
 cd snapdir_0$i
 wget -nd -nc -nv -e robots=off -l 1 -r -A hdf5 --content-disposition --header="API-Key: a64541c838c1bfe5a871e69d2cd1ab25" "http://www.tng-project.org/api/TNG50-4/files/snapshot-$i/?format=api"

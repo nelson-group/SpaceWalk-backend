@@ -3,7 +3,7 @@ import scipy
 import numpy as np
 import matplotlib.pyplot as plt
 
-baseSnapId = 75
+baseSnapId = 99
 basePath = 'D:/VMShare/Documents/data/'
 
 fields = ['Masses', 'Coordinates', 'Density']
@@ -31,8 +31,6 @@ ax.set_ylim(minCoord[1], maxCoord[1])
 ax.set_zlim(minCoord[2], maxCoord[2])
 
 for subhaloId in subhaloIds:
-
-
     tree = il.sublink.loadTree(basePath, baseSnapId, GroupFirstSub[subhaloId], fields=fields, onlyMPB=True)
     subhaloSnapNums = np.flip(np.array(tree["SnapNum"]), axis=0)
     subhaloPos = np.flip(np.array(tree["SubhaloPos"]), axis=0)
@@ -59,4 +57,4 @@ for subhaloId in subhaloIds:
         ax.scatter(s[:, 0], s[:, 1], s[:, 2],s=0.1)
         ax.scatter(piecewisePos[:, 0], piecewisePos[:, 1], piecewisePos[:, 2],marker='x')
 
-plt.show()
+plt.show() # if they break down and have strange ways, thats based on the data: https://www.tng-project.org/data/docs/scripts/
