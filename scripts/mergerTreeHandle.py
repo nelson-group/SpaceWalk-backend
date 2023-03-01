@@ -35,7 +35,8 @@ for subhaloId in subhaloIds:
     tree = il.sublink.loadTree(basePath, baseSnapId, GroupFirstSub[subhaloId], fields=fields, onlyMPB=True)
     subhaloSnapNums = np.flip(np.array(tree["SnapNum"]), axis=0)
     subhaloPos = np.flip(np.array(tree["SubhaloPos"]), axis=0)
-    subhaloVel = np.flip(np.array(tree["SubhaloVel"]), axis=0)
+    subhaloVel = np.flip(np.array(tree["SubhaloVel"]), axis=0) # km sqrt(a) / s  3.2408e-11 = km -> kpc
+    subhaloVel = subhaloVel * 3.154e+7 / 3.086e+16 # calc km/s to kpc/a
     for snapId in range(len(subhaloSnapNums)-1):
         piecewiseSnapNums = subhaloSnapNums[snapId:snapId+2]
         piecewisePos = subhaloPos[snapId:snapId+2]
@@ -45,15 +46,15 @@ for subhaloId in subhaloIds:
         x = spline.x
         k = c.shape[0] - 1
         s = np.zeros((0, 3))
-        interpolationSteps = np.linspace(piecewiseSnapNums[0], piecewiseSnapNums[1], 100)
+        interpolationSteps = np.linspace(0, 1, 10)
         for i in interpolationSteps:
-            terms = [c[m, 0] * (i - piecewiseSnapNums[0]) ** (k - m) for m in range(k+1)]
+            terms = [c[m, 0] * i ** (k - m) for m in range(k+1)]
             sTmp = np.sum(terms, axis=0).reshape((1, -1))
 
             s = np.concatenate((s, sTmp))
 
-        dif0 = s[0] - piecewisePos[0]
-        dif1 = s[-1] - piecewisePos[1]
+        # dif0 = s[0] - piecewisePos[0]
+        # dif1 = s[-1] - piecewisePos[1]
         plt.title(f"All Subhalos; ")
         ax.scatter(s[:, 0], s[:, 1], s[:, 2],s=0.1)
         ax.scatter(piecewisePos[:, 0], piecewisePos[:, 1], piecewisePos[:, 2],marker='x')
