@@ -48,19 +48,22 @@ def main():
         global idx
         early_stop = True
 
-        # if idx >= lodMax:
-        #     return early_stop
+        if idx >= lodMax:
+            return early_stop
+
+        # if len(particleArrIds) >= lodMax:
+        #     return  early_stop
 
         if not boxIntersect(node_info.origin, node_info.origin+node_info.size, viewBox["Min"], viewBox["Max"]):
             return early_stop
 
         if isinstance(node, o3d.geometry.OctreeLeafNode):
-            # rangeLod = min(lod, len(node.indices), lodMax - idx)
-            # particleArrIds[idx:idx+rangeLod] = node.indices[0:rangeLod]
-            # idx += rangeLod
-            rangeLod = min(lod, len(node.indices))
-            for ids in range(rangeLod):
-                particleArrIds.append(ids)
+            rangeLod = min(lod, len(node.indices), lodMax - idx)
+            particleArrIds[idx:idx+rangeLod] = node.indices[0:rangeLod]
+            idx += rangeLod
+            # rangeLod = min(lod, len(node.indices))
+            # for ids in range(rangeLod):
+            #     particleArrIds.append(node.indices[ids])
 
             return early_stop
 
@@ -73,8 +76,8 @@ def main():
         start = time.time()
 
         idx = 0
-        # particleArrIds = np.zeros(lodMax)
-        particleArrIds = []
+        particleArrIds = np.zeros(lodMax)
+        # particleArrIds = []
         oct.traverse(getIntersectingNodes)
         end = time.time()
         print(len(particleArrIds), particleArrIds)
