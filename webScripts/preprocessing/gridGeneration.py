@@ -17,7 +17,6 @@ def main():
 
 
     snapshot1 = il.snapshot.loadSubset(basePath, baseSnapId + 1, 'gas', fields=fields)
-    header1 = il.groupcat.loadHeader(basePath, baseSnapId + 1)
 
     allCombinedAttributes = getSameParticleInTwoDataSets(snapshot0, snapshot1, fields)
     coordinates = np.vstack(allCombinedAttributes['Coordinates'])
