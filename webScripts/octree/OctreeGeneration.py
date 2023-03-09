@@ -66,22 +66,31 @@ def preprocessSnaps(basePath, baseSnapId, fields, nSnapsToLoad, sizePerLeaf=100,
         if not safeOctree:
             allOctrees.append(octTree)
         else:
-            file_name = basePath + "snapdir_" + str(baseSnapId + i).zfill(3)+"/o3dOctree.json"
+            file_path = basePath + "snapdir_" + str(baseSnapId + i).zfill(3)+"/"
+            file_name = file_path + "o3dOctree.json"
             print("Safe Octree to " + file_name)
             if o3d.io.write_octree(file_name, octTree):
-                print(f'Object successfully saved to "{file_name}"')
+                print(f'Object successfully saved to "{file_name}", Saving additional data:')
+                file_name = file_path + "particleListOfLeafs.obj"
+                with open(file_name, 'wb') as file:
+                    pickle.dump(indicesForOctree, file)
+                for field in fields:
+                    file_name = file_path + field + ".npy"
+                    if np.array(allCombinedAttributes[field]).ndim == 1:
+                        np.save(file_name, np.hstack(allCombinedAttributes[field]))
+                    else:
+                        np.save(file_name, np.vstack(allCombinedAttributes[field]))
+                    print(f'Saved: "{file_name}"')
             else:
                 print(f'Object was not saved to "{file_name}"')
 
     return allOctrees
 
-
-
 def main():
     baseSnapId = 75
     basePath = 'D:/VMShare/Documents/data/'
     fields = ['Coordinates', 'ParticleIDs']
-    nSnapsToLoad = 10
+    nSnapsToLoad = 11
 
     preprocessSnaps(basePath, baseSnapId, fields, nSnapsToLoad, sizePerLeaf=350, safeOctree=True)
 
