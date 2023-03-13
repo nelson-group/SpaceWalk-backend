@@ -29,7 +29,7 @@ def generateOctree(coordinates, max_depth = 5):
     return octTree
 
 
-def preprocessSnaps(basePath, baseSnapId, fields, nSnapsToLoad, sizePerLeaf=100,safeOctree=False):
+def preprocessSnaps(basePath, baseSnapId, fields, nSnapsToLoad, sizePerLeaf=100,safeOctree=False, sortField = "Density"):
     global idx
 
     loadHeader = True
@@ -42,15 +42,26 @@ def preprocessSnaps(basePath, baseSnapId, fields, nSnapsToLoad, sizePerLeaf=100,
     for i in tqdm(range(nSnapsToLoad-1),total=nSnapsToLoad-1):
         allCombinedAttributes = getSameParticleInTwoDataSets(allLoadedSnaps[i]["snapData"], allLoadedSnaps[i+1]["snapData"], fields)
         coordinates = np.vstack(allCombinedAttributes['Coordinates'])
-        # densities = np.hstack(allCombinedAttributes['Density'])
         octTree = generateOctree(coordinates, maxDepth)
         indicesForOctree = []
         idx = 0
+        dimsOfSortField = allCombinedAttributes[sortField[0]].ndim()
+        if dimsOfSortField == 1:
+            fields_array = np.hstack(allCombinedAttributes[sortField])
+        elif dimsOfSortField == 3:
+            threeDimsFields = np.vstack(allCombinedAttributes[sortField])
+            fields_array = np.linalg.norm(threeDimsFields, axis=0)
+        else:
+            raise Exception(f"Either 1 or 3 dims, instead found {dimsOfSortField} dims")
+
 
         def changeIdsWithListId(node, node_info):
             if isinstance(node, o3d.geometry.OctreeLeafNode):
                 global idx
-                indicesForOctree.append(np.array(node.indices))
+                indices = node.indices
+                fields_in_leaf = fields_array[indices]
+                sorted_indices = np.argsort(fields_in_leaf)[::-1]
+                indicesForOctree.append(np.array(indices[sorted_indices]))
                 node.indices = [idx]
                 idx += 1
                 return True
@@ -87,10 +98,10 @@ def preprocessSnaps(basePath, baseSnapId, fields, nSnapsToLoad, sizePerLeaf=100,
     return allOctrees
 
 def main():
-    baseSnapId = 75
-    basePath = 'D:/VMShare/Documents/data/'
-    fields = ['Coordinates', 'ParticleIDs']
-    nSnapsToLoad = 11
+    baseSnapId = 79
+    basePath = '~/Documents/tng_sv/data/'
+    fields = ['Coordinates', 'ParticleIDs', 'Density']
+    nSnapsToLoad = 5
 
     preprocessSnaps(basePath, baseSnapId, fields, nSnapsToLoad, sizePerLeaf=350, safeOctree=True)
 
