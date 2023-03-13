@@ -9,6 +9,9 @@ def loadOctreeWithData(basePath, baseSnapId, fields):
     file_name = basePath + "snapdir_" + str(baseSnapId).zfill(3) + "/o3dOctree.json"
     snapData = {}
     snapData["oct"] = o3d.io.read_octree(file_name)
+    for fields in fields:
+        
+
     return snapData
 
 
