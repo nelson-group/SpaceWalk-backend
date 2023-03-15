@@ -45,7 +45,7 @@ def preprocessSnaps(basePath, baseSnapId, fields, nSnapsToLoad, sizePerLeaf=100,
         octTree = generateOctree(coordinates, maxDepth)
         indicesForOctree = []
         idx = 0
-        dimsOfSortField = allCombinedAttributes[sortField[0]].ndim()
+        dimsOfSortField = allCombinedAttributes[sortField][0].ndim
         if dimsOfSortField == 1:
             fields_array = np.hstack(allCombinedAttributes[sortField])
         elif dimsOfSortField == 3:
@@ -54,17 +54,39 @@ def preprocessSnaps(basePath, baseSnapId, fields, nSnapsToLoad, sizePerLeaf=100,
         else:
             raise Exception(f"Either 1 or 3 dims, instead found {dimsOfSortField} dims")
 
-
+        offset = len(allCombinedAttributes["Coordinates"][0])
+        particleIds = np.hstack(allCombinedAttributes['ParticleIDs']).astype(np.int64)
         def changeIdsWithListId(node, node_info):
             if isinstance(node, o3d.geometry.OctreeLeafNode):
                 global idx
-                indices = node.indices
-                fields_in_leaf = fields_array[indices]
-                sorted_indices = np.argsort(fields_in_leaf)[::-1]
-                indicesForOctree.append(np.array(indices[sorted_indices]))
+
+                _,indices = np.unique(particleIds[node.indices], return_index=True)
+                allIndicesWithoutDuplicates = node.indices[indices]
+                allIndicesWithoutDuplicates[allIndicesWithoutDuplicates >= offset] -= offset
+                indicesForOctree.append(allIndicesWithoutDuplicates)
+
+
+                # indicesNoDuplicates = np.array(node.indices)
+                # originalIndices = np.array(node.indices)
+                # maskIndicesSnap1 = np.array(np.array(node.indices) >= offset)
+                # maskIndicesSnap0 = np.invert(maskIndicesSnap1)
+                # indicesToRemove = []
+                # offsetLeaf = np.sum(maskIndicesSnap0)
+                # allParticleIdsS0 = particleIds[originalIndices[maskIndicesSnap0]]
+                # for counter, index in enumerate(originalIndices[maskIndicesSnap1]):
+                #     if np.any(allParticleIdsS0 == particleIds[index]):
+                #         indicesToRemove.append(offsetLeaf + counter)
+                #     else:
+                #         indicesNoDuplicates[offsetLeaf + counter] -= offset # aus s1 wird s0 indem offset abgezogen wird (s0: 0...5, s1: 6...11, offset = 6) => s0[3] == s1[9] ==> 9 - offset = 3 ==> s1[9] - offset = s0[3]
+
+                # indicesNoDuplicates = np.delete(indicesNoDuplicates, indicesToRemove)
+                # fields_in_leaf = fields_array[indicesNoDuplicates]
+                # sorted_indices = np.array(np.argsort(fields_in_leaf)[::-1])
+                # indicesForOctree.append(np.array(np.array(indicesNoDuplicates)[sorted_indices]))
                 node.indices = [idx]
                 idx += 1
                 return True
+
             if isinstance(node, o3d.geometry.OctreeInternalPointNode):
                 node.indices = []
 
@@ -98,8 +120,8 @@ def preprocessSnaps(basePath, baseSnapId, fields, nSnapsToLoad, sizePerLeaf=100,
     return allOctrees
 
 def main():
-    baseSnapId = 79
-    basePath = '~/Documents/tng_sv/data/'
+    baseSnapId = 75
+    basePath = 'D:/VMShare/Documents/data'
     fields = ['Coordinates', 'ParticleIDs', 'Density']
     nSnapsToLoad = 5
 

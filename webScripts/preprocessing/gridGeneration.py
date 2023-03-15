@@ -156,7 +156,9 @@ def getSameParticleInTwoDataSets(snapshot0, snapshot1, dataTypes):
     mask2 = np.zeros(_len)
     mask2[np.array(id_1 - _min, dtype=int)] = 1
     mask = (mask1 * mask2).astype(bool)
+    
     allCombinedAttributes = dict()
+    allCombinedAttributes['Mask'] = mask
     for dataType in dataTypes:
         attributesDense0 = snapshot0[dataType]
         attributesDense1 = snapshot1[dataType]
