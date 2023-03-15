@@ -61,28 +61,12 @@ def preprocessSnaps(basePath, baseSnapId, fields, nSnapsToLoad, sizePerLeaf=100,
                 global idx
 
                 _,indices = np.unique(particleIds[node.indices], return_index=True)
-                allIndicesWithoutDuplicates = node.indices[indices]
+                allIndicesWithoutDuplicates = np.array(node.indices)[indices]
                 allIndicesWithoutDuplicates[allIndicesWithoutDuplicates >= offset] -= offset
-                indicesForOctree.append(allIndicesWithoutDuplicates)
 
-
-                # indicesNoDuplicates = np.array(node.indices)
-                # originalIndices = np.array(node.indices)
-                # maskIndicesSnap1 = np.array(np.array(node.indices) >= offset)
-                # maskIndicesSnap0 = np.invert(maskIndicesSnap1)
-                # indicesToRemove = []
-                # offsetLeaf = np.sum(maskIndicesSnap0)
-                # allParticleIdsS0 = particleIds[originalIndices[maskIndicesSnap0]]
-                # for counter, index in enumerate(originalIndices[maskIndicesSnap1]):
-                #     if np.any(allParticleIdsS0 == particleIds[index]):
-                #         indicesToRemove.append(offsetLeaf + counter)
-                #     else:
-                #         indicesNoDuplicates[offsetLeaf + counter] -= offset # aus s1 wird s0 indem offset abgezogen wird (s0: 0...5, s1: 6...11, offset = 6) => s0[3] == s1[9] ==> 9 - offset = 3 ==> s1[9] - offset = s0[3]
-
-                # indicesNoDuplicates = np.delete(indicesNoDuplicates, indicesToRemove)
-                # fields_in_leaf = fields_array[indicesNoDuplicates]
-                # sorted_indices = np.array(np.argsort(fields_in_leaf)[::-1])
-                # indicesForOctree.append(np.array(np.array(indicesNoDuplicates)[sorted_indices]))
+                fields_in_leaf = fields_array[allIndicesWithoutDuplicates]
+                sorted_indices = np.array(np.argsort(fields_in_leaf)[::-1])
+                indicesForOctree.append(np.array(allIndicesWithoutDuplicates[sorted_indices]))
                 node.indices = [idx]
                 idx += 1
                 return True
@@ -121,7 +105,7 @@ def preprocessSnaps(basePath, baseSnapId, fields, nSnapsToLoad, sizePerLeaf=100,
 
 def main():
     baseSnapId = 75
-    basePath = 'D:/VMShare/Documents/data'
+    basePath = 'D:/VMShare/Documents/data/'
     fields = ['Coordinates', 'ParticleIDs', 'Density']
     nSnapsToLoad = 5
 
