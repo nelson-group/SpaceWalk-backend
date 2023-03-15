@@ -38,6 +38,17 @@ def loadOctreeWithData(basePath, baseSnapId, fields):
     duration = end - start
     print(f"duration obj:{duration}")
 
+    start = time.time()
+    for file in onlyfiles:
+        if re.search(r".*splines.*", file):
+            file_name = file_path + f"/{file}"
+            snapData["splines"] = np.load(file_path + f"/{file}")
+            break
+
+    end = time.time()
+    duration = end - start
+    print(f"duration splines:{duration}")
+
     if not snapData["particleListOfLeaf"]:
         print("Error while loading particleListOfLeaf!")
         return snapData

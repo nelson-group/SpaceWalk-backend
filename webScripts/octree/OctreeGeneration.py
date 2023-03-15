@@ -1,9 +1,13 @@
+import multiprocessing
+from multiprocessing import Pool
+
 import illustris_python as il
 import numpy as np
 import matplotlib.pyplot as plt
 import open3d as o3d
 from tqdm import tqdm
 import pickle
+import scipy
 
 from tng_sv.webScripts.preprocessing.gridGeneration import getSameParticleInTwoDataSets
 
@@ -12,10 +16,10 @@ def loadDatasets(basePath, baseSnapId, fields, nSnapsToLoad, loadHeader=False):
     allLoadedSnap = list()
     for i in range(baseSnapId, baseSnapId+nSnapsToLoad):
         snapDict = {}
-        snapDict["snapData"] = il.snapshot.loadSubset(basePath, baseSnapId, 'gas', fields=fields)
+        snapDict["snapData"] = il.snapshot.loadSubset(basePath, i, 'gas', fields=fields)
         snapDict["snapInfo"] = None
         if loadHeader:
-            snapDict["snapInfo"] = il.groupcat.loadHeader(basePath, baseSnapId)
+            snapDict["snapInfo"] = il.groupcat.loadHeader(basePath, i)
 
         allLoadedSnap.append(snapDict)
     return allLoadedSnap
@@ -28,6 +32,12 @@ def generateOctree(coordinates, max_depth = 5):
     octTree.convert_from_point_cloud(pcd)
     return octTree
 
+
+def f(c0, c1, v0, v1):
+    spline = scipy.interpolate.CubicHermiteSpline([0, 1],
+                                                  [c0, c1],
+                                                  [v0, v1])
+    return spline.c.squeeze()
 
 def preprocessSnaps(basePath, baseSnapId, fields, nSnapsToLoad, sizePerLeaf=100,safeOctree=False, sortField = "Density"):
     global idx
@@ -56,6 +66,7 @@ def preprocessSnaps(basePath, baseSnapId, fields, nSnapsToLoad, sizePerLeaf=100,
 
         offset = len(allCombinedAttributes["Coordinates"][0])
         particleIds = np.hstack(allCombinedAttributes['ParticleIDs']).astype(np.int64)
+
         def changeIdsWithListId(node, node_info):
             if isinstance(node, o3d.geometry.OctreeLeafNode):
                 global idx
@@ -73,12 +84,25 @@ def preprocessSnaps(basePath, baseSnapId, fields, nSnapsToLoad, sizePerLeaf=100,
 
             if isinstance(node, o3d.geometry.OctreeInternalPointNode):
                 node.indices = []
-
+        print("start octree calc")
         octTree.traverse(changeIdsWithListId)
+        print("Octree calculated")
+
         sum = 0
         for idx, val in enumerate(indicesForOctree):
             sum += len(val)
         print(sum / len(indicesForOctree))
+
+        # --------------Spline Array bauen ---------------
+        print("start spline calc")
+        c0 = np.array(allCombinedAttributes["Coordinates"][0])
+        c1 = np.array(allCombinedAttributes["Coordinates"][1])
+        v0 = np.array(allCombinedAttributes["Velocities"][0])
+        v1 = np.array(allCombinedAttributes["Velocities"][1])
+        zipped = zip(c0, c1, v0, v1)
+        with Pool(processes=int(multiprocessing.cpu_count())) as pool:
+            c = pool.starmap(f, zipped)
+        print("Splines calculated")
 
         if not safeOctree:
             allOctrees.append(octTree)
@@ -91,6 +115,12 @@ def preprocessSnaps(basePath, baseSnapId, fields, nSnapsToLoad, sizePerLeaf=100,
                 file_name = file_path + "particleListOfLeafs.obj"
                 with open(file_name, 'wb') as file:
                     pickle.dump(indicesForOctree, file)
+                print(f'Saved: "{file_name}"')
+
+                file_name = file_path + "splines.npy"
+                np.save(file_name, c)
+                print(f'Saved: "{file_name}"')
+
                 for field in fields:
                     file_name = file_path + field + ".npy"
                     if np.array(allCombinedAttributes[field]).ndim == 1:
@@ -106,7 +136,7 @@ def preprocessSnaps(basePath, baseSnapId, fields, nSnapsToLoad, sizePerLeaf=100,
 def main():
     baseSnapId = 75
     basePath = 'D:/VMShare/Documents/data/'
-    fields = ['Coordinates', 'ParticleIDs', 'Density']
+    fields = ['Coordinates', 'ParticleIDs', 'Density', 'Velocities']
     nSnapsToLoad = 5
 
     preprocessSnaps(basePath, baseSnapId, fields, nSnapsToLoad, sizePerLeaf=350, safeOctree=True)
