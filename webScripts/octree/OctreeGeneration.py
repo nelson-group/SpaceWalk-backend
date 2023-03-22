@@ -9,7 +9,7 @@ from tqdm import tqdm
 import pickle
 import scipy
 
-from tng_sv.webScripts.preprocessing.gridGeneration import getSameParticleInTwoDataSets
+from webScripts.preprocessing.gridGeneration import getSameParticleInTwoDataSets
 
 
 def loadDatasets(basePath, baseSnapId, fields, nSnapsToLoad, loadHeader=False):
