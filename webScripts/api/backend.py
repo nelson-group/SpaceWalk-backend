@@ -124,12 +124,11 @@ async def get_splines(
 
 
     # Increase Level of details
-    level_of_detail = {lod: int(level_of_detail.get(lod)+1) for lod in level_of_detail}
+    level_of_detail = {str(lod): int(level_of_detail.get(lod)+1) for lod in level_of_detail}
 
-    breakpoint()
     return JSONResponse({
         "level_of_detail": level_of_detail,
-        "relevant_ids": relevant_ids,
+        "relevant_ids": np.array(relevant_ids).tolist(),
         "node_indices": node_indices.tolist(),
         "coordinates": coordinates[relevant_ids].tolist(),
         "velocities": velocities[relevant_ids].tolist(),
