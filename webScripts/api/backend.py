@@ -110,7 +110,7 @@ async def get_splines(
     # Get number of particles per leaf (=total number of particles to load in one level of detail) 
     lod_indices_per_leaf = client_state.batch_size_lod
     client_node_indices = np.array(client_state.node_indices)
-    client_level_of_detail = np.array(client_state.level_of_detail)
+    client_level_of_detail = client_state.level_of_detail
 
     # List of numbers of total particles per leaf
     length_particles_in_leafs = {}
