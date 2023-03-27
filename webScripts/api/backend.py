@@ -12,11 +12,6 @@ BASE = Path("~/Documents/data/tng/manual_download/")
 
 app = FastAPI()
 
-class ClientState(BaseModel):
-    node_indices: list[int]
-    level_of_detail: dict[int, int]
-    batch_size_lod: int # Number of particles per leaf to be loaded
-
 
 class CameraInformation(BaseModel):
     x: int
@@ -31,6 +26,13 @@ class CameraInformation(BaseModel):
         return ViewBox(boxMin, boxMax)
 
 
+class ClientState(BaseModel):
+    node_indices: list[int]
+    level_of_detail: dict[int, int]
+    batch_size_lod: int # Number of particles per leaf to be loaded
+    camera_information: CameraInformation
+
+
 def data_basedir(_simulation: str, snap_id: int) -> Path:
     """Return path to relevant data basedir."""
     return Path(BASE.joinpath(f"snapdir_{str(snap_id).zfill(3)}/")).expanduser()
@@ -42,7 +44,7 @@ class DataCache:
 
 
     def get_data(self, simulation, snap_id):
-        dictkey = simulation + snap_id
+        dictkey = simulation + str(snap_id)
         if dictkey in self._cache:
             return self._cache[dictkey]
         
@@ -65,7 +67,6 @@ cache = DataCache()
 
 @app.post("/v1/get/splines/{simulation}/{snap_id}")
 async def get_splines(
-    camera_information: CameraInformation,
     client_state: ClientState,
     simulation: str,
     snap_id: int
@@ -79,7 +80,7 @@ async def get_splines(
     densities = data["densities"]
     coordinates = data["coordinates"]
 
-    octree_traversal = OctreeTraversal(camera_information.to_viewbox())
+    octree_traversal = OctreeTraversal(client_state.camera_information.to_viewbox())
     octree.traverse(octree_traversal.getIntersectingNodes)
     node_indices = np.array(octree_traversal.particleArrIds)
 
@@ -92,7 +93,10 @@ async def get_splines(
     client_level_of_detail = np.array(client_state.level_of_detail)
 
     # List of numbers of total particles per leaf
-    length_particles_in_leafs = {node: len(node) for node in particle_list_of_leafs[node_indices]}
+    length_particles_in_leafs = {}
+    for node_idx in node_indices:
+        length_particles_in_leafs[int(node_idx)] = len(particle_list_of_leafs[node_idx])
+    # length_particles_in_leafs = {node: len(node) for node in particle_list_of_leafs[node_idx]}
 
 
     # Define Level of detail per leaf, in first run they should all be zero
@@ -120,11 +124,12 @@ async def get_splines(
 
 
     # Increase Level of details
-    level_of_detail = {lod: level_of_detail.get(lod)+1 for lod in level_of_detail}
+    level_of_detail = {lod: int(level_of_detail.get(lod)+1) for lod in level_of_detail}
 
+    breakpoint()
     return JSONResponse({
         "level_of_detail": level_of_detail,
-        "relevant_ids": relevant_ids.tolist(),
+        "relevant_ids": relevant_ids,
         "node_indices": node_indices.tolist(),
         "coordinates": coordinates[relevant_ids].tolist(),
         "velocities": velocities[relevant_ids].tolist(),
