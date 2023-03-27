@@ -23,6 +23,7 @@ dependencies = [
     "open3d",
     "fastapi",
     "pydantic"
+    "uvicorn"
 ]
 
 [project.optional-dependencies]
