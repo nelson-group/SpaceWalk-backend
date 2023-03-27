@@ -59,6 +59,8 @@ class DataCache:
         particle_list_of_leafs = pickle.load(basedir.joinpath("particleListOfLeafs.obj").open(mode="rb"))
 
         self._cache[dictkey] = {"particle_list_of_leafs": particle_list_of_leafs, "octree": octree, "splines": splines, "velocities": velocities, "densities": densities, "coordinates": coordinates}
+        self._cache[dictkey]["min_density"] = np.min(densities)
+        self._cache[dictkey]["max_density"] = np.max(densities)
         return self._cache[dictkey]
 
 
@@ -134,5 +136,7 @@ async def get_splines(
         "velocities": velocities[relevant_ids].tolist(),
         "densities": densities.T[relevant_ids].tolist(),
         "splines": splines[relevant_ids].tolist(),
+        "min_density":data["min_density"],
+        "max_density":data["max_density"]
     })
 
