@@ -14,10 +14,10 @@ app = FastAPI()
 
 
 class CameraInformation(BaseModel):
-    x: int
-    y: int
-    z: int
-    size: int
+    x: float
+    y: float
+    z: float
+    size: float
     
     def to_viewbox(self) -> ViewBox:
         """Return camera position as Viewbox."""
