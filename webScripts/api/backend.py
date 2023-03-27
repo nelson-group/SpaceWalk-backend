@@ -154,7 +154,7 @@ async def get_splines(
         "velocities": velocities[relevant_ids].tolist(),
         "densities": densities.T[relevant_ids].tolist(),
         "splines": splines[relevant_ids].tolist(),
-        "min_density":data["min_density"],
-        "max_density":data["max_density"]
+        "min_density": data["min_density"],
+        "max_density": data["max_density"]
     })
 
