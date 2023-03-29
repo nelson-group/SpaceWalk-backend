@@ -73,7 +73,7 @@ class DataCache:
         splines = np.load(basedir.joinpath("splines.npy"))
         velocities = np.load(basedir.joinpath("Velocities.npy"))
         densities = np.load(basedir.joinpath("Density.npy"))
-        densities = densities / np.max(densities[:])
+        densities = densities / np.max(densities[:])  # normalization is expected from client
         coordinates = np.load(basedir.joinpath("Coordinates.npy"))
 
         particle_list_of_leafs = pickle.load(basedir.joinpath("particleListOfLeafs.obj").open(mode="rb"))
