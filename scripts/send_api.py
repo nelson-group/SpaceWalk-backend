@@ -4,12 +4,12 @@ from pprint import pprint as pp
 client_state = {
     "node_indices": [],
     "level_of_detail": {},
-    "batch_size_lod": 3,
+    "batch_size_lod": 500,
     "camera_information": {
-        "x": 10,
-        "y": 200,
-        "z": 325,
-        "size": 100,
+        "x": 25000,
+        "y": 25000,
+        "z": 25000,
+        "size": 500,
     }
 }
 

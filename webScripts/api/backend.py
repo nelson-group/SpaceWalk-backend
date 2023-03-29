@@ -9,6 +9,7 @@ from webScripts.octree.OctreeTraversal import OctreeTraversal, ViewBox
 from fastapi.middleware.cors import CORSMiddleware
 
 O3D_OCTREE = "o3dOctree.json"
+# BASE = Path("D:/VMShare/Documents/data/")
 BASE = Path("~/Documents/data/tng/manual_download/")
 
 app = FastAPI()
@@ -77,8 +78,6 @@ class DataCache:
         particle_list_of_leafs = pickle.load(basedir.joinpath("particleListOfLeafs.obj").open(mode="rb"))
 
         self._cache[dictkey] = {"particle_list_of_leafs": particle_list_of_leafs, "octree": octree, "splines": splines, "velocities": velocities, "densities": densities, "coordinates": coordinates}
-        self._cache[dictkey]["min_density"] = np.min(densities)
-        self._cache[dictkey]["max_density"] = np.max(densities)
         return self._cache[dictkey]
 
 
@@ -104,9 +103,9 @@ async def get_splines(
     octree.traverse(octree_traversal.getIntersectingNodes)
     node_indices = np.array(octree_traversal.particleArrIds)
 
+
     # Load list of leaves with list of particlIdx's per leaf
     particle_list_of_leafs: list[list[int]] = data["particle_list_of_leafs"]
-
     # Get number of particles per leaf (=total number of particles to load in one level of detail) 
     lod_indices_per_leaf = client_state.batch_size_lod
     client_node_indices = np.array(client_state.node_indices)
@@ -145,7 +144,18 @@ async def get_splines(
 
     # Increase Level of details
     level_of_detail = {str(lod): int(level_of_detail.get(lod)+1) for lod in level_of_detail}
-    splines = np.transpose(splines, axes=[0, 2, 1]).flatten()
+    splines = splines[relevant_ids]
+    splines_a = splines[:, 0].flatten()
+    splines_b = splines[:, 1].flatten()
+    splines_c = splines[:, 2].flatten()
+    splines_d = splines[:, 3].flatten()
+
+    min_den = 0
+    max_den = 0
+    nParticles = len(relevant_ids)
+    if nParticles > 0:
+        min_den = np.min(np.array(densities.T[relevant_ids]))
+        max_den = np.max(np.array(densities.T[relevant_ids]))
 
     return JSONResponse({
         "level_of_detail": level_of_detail,
@@ -153,9 +163,13 @@ async def get_splines(
         "node_indices": node_indices.tolist(),
         "coordinates": coordinates[relevant_ids].tolist(),
         "velocities": velocities[relevant_ids].tolist(),
-        "densities": densities.T[relevant_ids].tolist(),
-        "splines": splines[relevant_ids].tolist(),
-        "min_density": data["min_density"],
-        "max_density": data["max_density"]
+        "densities": densities.T[relevant_ids].flatten().tolist(),
+        "splines_a": splines_a.tolist(),
+        "splines_b": splines_b.tolist(),
+        "splines_c": splines_c.tolist(),
+        "splines_d": splines_d.tolist(),
+        "min_density": min_den,
+        "max_density": max_den,
+        "nParticles": nParticles
     })
 
