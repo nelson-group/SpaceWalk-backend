@@ -145,6 +145,7 @@ async def get_splines(
 
     # Increase Level of details
     level_of_detail = {str(lod): int(level_of_detail.get(lod)+1) for lod in level_of_detail}
+    splines = np.transpose(splines, axes=[0, 2, 1]).flatten()
 
     return JSONResponse({
         "level_of_detail": level_of_detail,
