@@ -61,7 +61,6 @@ class DataCache:
     def __init__(self) -> None:
         self._cache = dict()
 
-
     def get_data(self, simulation, snap_id):
         dictkey = simulation + str(snap_id)
         if dictkey in self._cache:
@@ -121,11 +120,20 @@ async def get_splines(
     # Define Level of detail per leaf, in first run they should all be zero
     if len(client_node_indices) == 0:
         level_of_detail = {lod: 0 for lod in node_indices}
+
     else:
+        if len(client_node_indices) < len(node_indices):
         # Get current level of detail only for current leafs
-        node_indices_in_old_and_current_state = np.in1d(client_node_indices, node_indices)
-        lods_to_be_incremeted = client_node_indices[node_indices_in_old_and_current_state]
-        level_of_detail = {lod: client_level_of_detail.get(lod) for lod in lods_to_be_incremeted}
+            node_indices_in_old_and_current_state = np.in1d(node_indices, client_node_indices)
+            lods_to_be_incremeted = node_indices[node_indices_in_old_and_current_state]
+            level_of_detail = {lod: client_level_of_detail.get(lod) for lod in lods_to_be_incremeted}
+            new_level_of_detail = {lod: 0 for lod in node_indices[np.invert(node_indices_in_old_and_current_state)]} # needed if we move or zoom
+            level_of_detail = {**level_of_detail, **new_level_of_detail}
+        else:
+            # Get current level of detail only for current leafs
+            node_indices_in_old_and_current_state = np.in1d(client_node_indices, node_indices)
+            lods_to_be_incremeted = client_node_indices[node_indices_in_old_and_current_state]
+            level_of_detail = {lod: client_level_of_detail.get(lod) for lod in lods_to_be_incremeted}
 
 
     lod_indices_start = {lod: level_of_detail.get(lod) * lod_indices_per_leaf for lod in node_indices}
