@@ -6,4 +6,9 @@ __pycache__
 .idea
 build
 dist
+data/
 /playfield.py
+
+.DS_Store
+.vscode
+.env
