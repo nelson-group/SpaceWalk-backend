@@ -97,8 +97,8 @@ def preprocessSnaps(basePath, baseSnapId, fields, nSnapsToLoad, sizePerLeaf=100,
         print("start spline calc")
         c0 = np.array(allCombinedAttributes["Coordinates"][0])
         c1 = np.array(allCombinedAttributes["Coordinates"][1])
-        v0 = np.array(allCombinedAttributes["Velocities"][0])
-        v1 = np.array(allCombinedAttributes["Velocities"][1])
+        v0 = np.array(allCombinedAttributes["Velocities"][0]) * 3.154e+7 / 3.086e+16  # calc km/s to kpc/a
+        v1 = np.array(allCombinedAttributes["Velocities"][1]) * 3.154e+7 / 3.086e+16  # calc km/s to kpc/a
         zipped = zip(c0, c1, v0, v1)
         with Pool(processes=int(multiprocessing.cpu_count())) as pool:
             c = pool.starmap(f, zipped)
@@ -137,7 +137,7 @@ def main():
     baseSnapId = 75
     basePath = 'D:/VMShare/Documents/data/'
     fields = ['Coordinates', 'ParticleIDs', 'Density', 'Velocities']
-    nSnapsToLoad = 5
+    nSnapsToLoad = 11
 
     preprocessSnaps(basePath, baseSnapId, fields, nSnapsToLoad, sizePerLeaf=350, safeOctree=True)
 
