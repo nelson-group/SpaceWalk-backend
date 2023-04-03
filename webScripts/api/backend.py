@@ -124,8 +124,8 @@ async def get_splines(
     else:
         if len(client_node_indices) < len(node_indices):
         # Get current level of detail only for current leafs
-            node_indices_in_old_and_current_state = np.in1d(node_indices, client_node_indices)
-            lods_to_be_incremeted = node_indices[node_indices_in_old_and_current_state]
+            node_indices_in_old_and_current_state = np.in1d(client_node_indices, node_indices)
+            lods_to_be_incremeted = client_node_indices[node_indices_in_old_and_current_state]
             level_of_detail = {lod: client_level_of_detail.get(lod) for lod in lods_to_be_incremeted}
             new_level_of_detail = {lod: 0 for lod in node_indices[np.invert(node_indices_in_old_and_current_state)]} # needed if we move or zoom
             level_of_detail = {**level_of_detail, **new_level_of_detail}
