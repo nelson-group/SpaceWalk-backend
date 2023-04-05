@@ -7,6 +7,7 @@ import pickle
 import numpy as np
 from webScripts.octree.OctreeTraversal import OctreeTraversal, ViewBox
 from fastapi.middleware.cors import CORSMiddleware
+import time
 
 O3D_OCTREE = "o3dOctree.json"
 BASE = Path("D:/VMShare/Documents/data/")
@@ -117,31 +118,11 @@ async def get_splines(
     # length_particles_in_leafs = {node: len(node) for node in particle_list_of_leafs[node_idx]}
 
 
-    # Define Level of detail per leaf, in first run they should all be zero
-    if len(client_node_indices) == 0:
-        level_of_detail = {lod: 0 for lod in node_indices}
-
-    else:
-        if len(client_node_indices) < len(node_indices):
-        # Get current level of detail only for current leafs
-            node_indices_in_old_and_current_state = np.in1d(client_node_indices, node_indices)
-            lods_to_be_incremeted = client_node_indices[node_indices_in_old_and_current_state]
-            level_of_detail = {lod: client_level_of_detail.get(lod) for lod in lods_to_be_incremeted}
-            new_level_of_detail = {lod: 0 for lod in node_indices[np.invert(node_indices_in_old_and_current_state)]} # needed if we move or zoom
-            level_of_detail = {**level_of_detail, **new_level_of_detail}
-        elif len(client_node_indices) > len(node_indices): # nochmal der umgedrehte Fall, weil als ein fehler auftaucht aber eigentlich sollte das nicht sein :D
-        # Get current level of detail only for current leafs
-            node_indices_in_old_and_current_state = np.in1d(client_node_indices, node_indices)
-            lods_to_be_incremeted = client_node_indices[node_indices_in_old_and_current_state]
-            level_of_detail = {lod: client_level_of_detail.get(lod) for lod in lods_to_be_incremeted}
-            new_level_of_detail = {lod: 0 for lod in client_node_indices[np.invert(node_indices_in_old_and_current_state)]} # needed if we move or zoom
-            level_of_detail = {**level_of_detail, **new_level_of_detail}
-        else:
-            # Get current level of detail only for current leafs
-            node_indices_in_old_and_current_state = np.in1d(client_node_indices, node_indices)
-            lods_to_be_incremeted = client_node_indices[node_indices_in_old_and_current_state]
-            level_of_detail = {lod: client_level_of_detail.get(lod) for lod in lods_to_be_incremeted}
-
+    # Get current level of detail only for current leaf
+    level_of_detail = {lod: 0 for lod in node_indices}
+    node_indices_in_old_and_current_state = np.in1d(client_node_indices, node_indices)
+    for lod in client_node_indices[node_indices_in_old_and_current_state]:
+        level_of_detail[lod] = client_level_of_detail.get(lod)
 
     lod_indices_start = {lod: level_of_detail.get(lod) * lod_indices_per_leaf for lod in node_indices}
     lod_indices_end = {lod: (level_of_detail.get(lod) + 1) * lod_indices_per_leaf for lod in node_indices}
@@ -172,10 +153,12 @@ async def get_splines(
         min_den = np.min(np.array(densities.T[relevant_ids]))
         max_den = np.max(np.array(densities.T[relevant_ids]))
 
+    client_level_of_detail.update(level_of_detail)
+
     return JSONResponse({
-        "level_of_detail": level_of_detail,
+        "level_of_detail": client_level_of_detail,
         "relevant_ids": np.array(relevant_ids).tolist(),
-        "node_indices": node_indices.tolist(),
+        "node_indices": list(client_level_of_detail.keys()),
         "coordinates": coordinates[relevant_ids].tolist(),
         "velocities": velocities[relevant_ids].tolist(),
         "densities": densities.T[relevant_ids].flatten().tolist(),
