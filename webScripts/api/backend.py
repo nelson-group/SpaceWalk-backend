@@ -76,7 +76,7 @@ class DataCache:
         coordinates = np.load(basedir.joinpath("Coordinates.npy"))
 
         particle_list_of_leafs = pickle.load(basedir.joinpath("particleListOfLeafs.obj").open(mode="rb"))
-        density_quantiles = np.quantile(densities.flatten(), np.linspace(0, 1, 12))
+        density_quantiles = np.quantile(densities.flatten(), np.linspace(0, 1, 100))
 
         self._cache[dictkey] = {"particle_list_of_leafs": particle_list_of_leafs, "octree": octree, "splines": splines, "velocities": velocities, "densities": densities, "coordinates": coordinates, "density_quantiles": density_quantiles.tolist()}
         return self._cache[dictkey]
@@ -84,13 +84,16 @@ class DataCache:
 
 cache = DataCache()
 
-@app.get("/v1/get/splines/{simulation}/{snap_id}")
+@app.get("/v1/get/init/{simulation}/{snap_id}")
 async def get_init(
     simulation: str,
     snap_id: int
 ) -> JSONResponse:
     data = cache.get_data(simulation, snap_id)
-    return JSONResponse({"density_quantiles": data["density_quantiles"]})
+    return JSONResponse({
+        "density_quantiles": data["density_quantiles"],
+        "n_quantiles": len(data["density_quantiles"])
+    })
 
 
 @app.post("/v1/get/splines/{simulation}/{snap_id}")
