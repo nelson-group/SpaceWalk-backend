@@ -181,6 +181,7 @@ async def get_splines(
         "min_density": min_den,
         "max_density": max_den,
         "nParticles": nParticles,
-        "density_quantiles": data["density_quantiles"]
+        "density_quantiles": data["density_quantiles"],
+        "snapnum": snap_id
     })
 
