@@ -1,10 +1,16 @@
-from fastapi import FastAPI
+from typing import Optional
+
+from fastapi import FastAPI, HTTPException, status
 from fastapi.responses import JSONResponse
+import illustris_python as il
 from pydantic import BaseModel
 from pathlib import Path
 import open3d as o3d
 import pickle
 import numpy as np
+from os import listdir
+from os.path import isdir, join
+import re
 from webScripts.octree.OctreeTraversal import OctreeTraversal, ViewBox
 from fastapi.middleware.cors import CORSMiddleware
 import time
@@ -84,15 +90,43 @@ class DataCache:
 
 cache = DataCache()
 
+
+def get_init_data(simulation: str) -> Optional[dict[str, float | list[float]]]:
+    return_data = {}
+    only_dirs = [f for f in listdir(BASE) if isdir(join(BASE, f))]
+    return_data["all_possible_snaps"] = []
+
+    for dir in only_dirs:
+        if re.search(r"snapdir_", dir):
+            dir_splitted = dir.split("_")
+            return_data["all_possible_snaps"].append(float(dir_splitted[-1]))
+
+        if re.search(r"groups_", dir) and not "BoxSize" in return_data:
+            dir_splitted = dir.split("_")
+            return_data["BoxSize"] = il.groupcat.loadHeader(str(BASE), float(dir_splitted[-1]))["BoxSize"]
+
+    if "BoxSize" in return_data and len(return_data["all_possible_snaps"]) > 0:
+        return return_data
+
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+
+
+
+
 @app.get("/v1/get/init/{simulation}/{snap_id}")
 async def get_init(
     simulation: str,
     snap_id: int
 ) -> JSONResponse:
     data = cache.get_data(simulation, snap_id)
+    init_data = get_init_data(simulation)
+
     return JSONResponse({
         "density_quantiles": data["density_quantiles"],
-        "n_quantiles": len(data["density_quantiles"])
+        "n_quantiles": len(data["density_quantiles"]),
+        "available_snaps": init_data["all_possible_snaps"],
+        "BoxSize": init_data["BoxSize"]
     })
 
 
