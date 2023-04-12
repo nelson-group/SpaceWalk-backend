@@ -105,6 +105,7 @@ def get_init_data(simulation: str) -> Optional[dict[str, float | list[float]]]:
             dir_splitted = dir.split("_")
             return_data["BoxSize"] = il.groupcat.loadHeader(str(BASE), float(dir_splitted[-1]))["BoxSize"]
 
+    return_data["all_possible_snaps"].pop(-1)
     if "BoxSize" in return_data and len(return_data["all_possible_snaps"]) > 0:
         return return_data
 
