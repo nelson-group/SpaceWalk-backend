@@ -22,8 +22,8 @@ dependencies = [
     "matplotlib",
     "open3d",
     "fastapi",
-    "pydantic"
-    "uvicorn"
+    "pydantic",
+    "uvicorn",
 ]
 
 [project.optional-dependencies]
