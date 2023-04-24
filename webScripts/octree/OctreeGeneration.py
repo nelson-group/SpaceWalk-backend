@@ -41,6 +41,9 @@ def spline_calculation(c0, c1, v0, v1):
     return spline.c.squeeze()
 
 
+idx = 0
+
+
 def generate_new_octree(sizePerLeaf, allLoadedSnaps, allCombinedAttributes, initialSortField):
     maxDepth = np.ceil(np.log2(allLoadedSnaps[0]["snapInfo"]["BoxSize"] / sizePerLeaf)).astype(
         int)  # approximation der tiefe bei sizePerLeaf Angabe => sizeLeaf ~ sizeBox / 2^x ==> formel vorne
@@ -48,7 +51,6 @@ def generate_new_octree(sizePerLeaf, allLoadedSnaps, allCombinedAttributes, init
     coordinates = np.vstack(allCombinedAttributes['Coordinates'])
     octTree = generateOctree(coordinates, maxDepth)
     indicesForOctree = []
-    idx = 0
     dimsOfSortField = allCombinedAttributes[initialSortField][0].ndim
     if dimsOfSortField == 1:
         fields_array = np.hstack(allCombinedAttributes[initialSortField])
@@ -138,7 +140,7 @@ def preprocessSnaps(basePath, baseSnapId, fields, nSnapsToLoad, sizePerLeaf=100,
             with open(file_path + f"particleListOfLeafs_{sortFields[0]}.obj", 'rb') as objFile:
                 indicesForOctree = pickle.load(objFile)
         else:
-            (octTree, indicesForOctree) = generate_new_octree(sizePerLeaf, allLoadedSnaps, allCombinedAttributes)
+            (octTree, indicesForOctree) = generate_new_octree(sizePerLeaf, allLoadedSnaps, allCombinedAttributes, "Density")
 
         sum = 0
         for idx, val in enumerate(indicesForOctree):
@@ -156,7 +158,7 @@ def preprocessSnaps(basePath, baseSnapId, fields, nSnapsToLoad, sizePerLeaf=100,
             v0 = np.array(allCombinedAttributes["Velocities"][0]) * 3.154e+7 / 3.086e+16  # calc km/s to kpc/a
             v1 = np.array(allCombinedAttributes["Velocities"][1]) * 3.154e+7 / 3.086e+16  # calc km/s to kpc/a
             zipped = zip(c0, c1, v0, v1)
-            with Pool(processes=int(multiprocessing.cpu_count())) as pool:
+            with Pool(processes=int(multiprocessing.cpu_count()//2)) as pool:
                 c = pool.starmap(spline_calculation, zipped)
             print("Splines calculated")
 
@@ -183,9 +185,10 @@ def preprocessSnaps(basePath, baseSnapId, fields, nSnapsToLoad, sizePerLeaf=100,
                         np.save(file_name, np.vstack(allCombinedAttributes[field]))
                     print(f'Saved: "{file_name}"')
 
-                    file_name = file_path + "voronoi_diameter_extended" + ".npy"
-                    np.save(file_name, volume)
-                    print(f'Saved: "{file_name}"')
+                # TODO: check if we should only save the diameter once, I think we should
+                file_name = file_path + "voronoi_diameter_extended" + ".npy"
+                np.save(file_name, volume)
+                print(f'Saved: "{file_name}"')
             else:
                 print(f'Object was not saved to "{file_name}"')
 
