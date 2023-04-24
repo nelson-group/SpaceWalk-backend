@@ -13,10 +13,11 @@ client_state = {
     }
 }
 
-simulation = "test"
+simulation = "TNG50-4"
 snap_id = "075"
-response = requests.post(f"http://127.0.0.1:8000/v1/get/splines/{simulation}/{snap_id}", json=client_state)
+response = requests.post(f"http://127.0.0.1:9999/v1/get/splines/{simulation}/{snap_id}", json=client_state)
 
+pp(response.content)
 pp(response.status_code)
 pp(response.json())
 response.raise_for_status()

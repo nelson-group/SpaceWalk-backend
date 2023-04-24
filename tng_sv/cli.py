@@ -16,6 +16,8 @@ from tng_sv.api.download import (
     download_halo,
     download_snapshot,
     download_subhalos,
+    download_webapp_groups,
+    download_webapp_snapshot,
     get_snapshot_amount,
     get_subhalos_from_subbox,
 )
@@ -41,9 +43,10 @@ from tng_sv.data.utils import (
     create_scalar_field_experiment_symlink,
 )
 from tng_sv.plot import plot_subhalo_com_against_cob
-from tng_sv.preprocessing import _run_center, _run_delaunay, run_delaunay, run_resample_delaunay
+from tng_sv.preprocessing import _run_center, _run_delaunay, run_delaunay, run_resample_delaunay, webapp
 from tng_sv.preprocessing.two_field_operations import scalar_product, vector_angle
 
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = typer.Typer()
@@ -51,6 +54,7 @@ app = typer.Typer()
 halo_app = typer.Typer()
 subhalo_app = typer.Typer()
 plot_app = typer.Typer()
+web_app = typer.Typer()
 
 
 @app.command(name="download")
@@ -356,11 +360,25 @@ def delaunay_halos_cmd(simulation_name: str = "TNG50-1", snapshot_idx: int = 0, 
         pool.map(_delaunay_subhalos_cmd, files)
 
 
+@web_app.command(name="download")
+def download_web_cmd(simulation_name: str = "TNG50-1", snapshot_idx: int = 0) -> None:
+    """Download snapshot for simulation webapp."""
+    download_webapp_snapshot(simulation_name, snapshot_idx)
+    download_webapp_groups(simulation_name, snapshot_idx)
+
+
+@web_app.command(name="preprocess")
+def preprocess_web_cmd(simulation_name: str = "TNG50-1", snapshot_idx: int = 0) -> None:
+    """Preprocess snapshot for simulation webapp."""
+    webapp.preprocess_snap(simulation_name, snapshot_idx)
+
+
 def cli() -> int:
     """Run the main function with typer."""
     app.add_typer(halo_app, name="halos")
     app.add_typer(subhalo_app, name="subhalos")
     app.add_typer(plot_app, name="plot")
+    app.add_typer(web_app, name="web")
     app()
     return 0
 

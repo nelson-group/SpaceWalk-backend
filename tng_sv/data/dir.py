@@ -29,6 +29,21 @@ def get_snapshot_index_path(simulation_name: str, snapshot_idx: int) -> Path:
     return DATADIR.joinpath(f"{simulation_name}/{snapshot_idx:03d}/")
 
 
+def get_webapp_base_path(simulation_name: str) -> Path:
+    """Return path to webapp base path."""
+    return DATADIR.joinpath(f"webapp/{simulation_name}/")
+
+
+def get_webapp_snapshot_index_path(simulation_name: str, snapshot_idx: int) -> Path:
+    """Return path to snapshot dir given simulation_name and snapshot_idx."""
+    return DATADIR.joinpath(f"webapp/{simulation_name}/snapdir_{snapshot_idx:03d}/")
+
+
+def get_webapp_groups_index_path(simulation_name: str, snapshot_idx: int) -> Path:
+    """Return path to snapshot dir given simulation_name and snapshot_idx."""
+    return DATADIR.joinpath(f"webapp/{simulation_name}/groups_{snapshot_idx:03d}/")
+
+
 def get_snapshot_combination_index_path(
     simulation_name: str, snapshot_idx: int, part_type: PartType, field_type: FieldType
 ) -> Path:

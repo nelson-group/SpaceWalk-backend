@@ -1,27 +1,29 @@
+from typing import Any, Dict, List, Tuple
+
 import illustris_python as il
 import numpy as np
-import matplotlib.pyplot as plt
 import open3d as o3d
 
 idx = 0
+
+
 def main():
     baseSnapId = 75
-    basePath = 'D:/VMShare/Documents/data/'
+    basePath = "D:/VMShare/Documents/data/"
 
-    fields = ['Masses', 'Coordinates', 'Density', 'Velocities', 'ParticleIDs']
-    snapshot0 = il.snapshot.loadSubset(basePath, baseSnapId, 'gas', fields=fields)
+    fields = ["Masses", "Coordinates", "Density", "Velocities", "ParticleIDs"]
+    snapshot0 = il.snapshot.loadSubset(basePath, baseSnapId, "gas", fields=fields)
     header0 = il.groupcat.loadHeader(basePath, baseSnapId)
 
-    numberOfParticlesPerBox = np.ceil(snapshot0['count'] / header0['Nsubgroups_Total'])
+    numberOfParticlesPerBox = np.ceil(snapshot0["count"] / header0["Nsubgroups_Total"])
     print(numberOfParticlesPerBox)
 
-
-    snapshot1 = il.snapshot.loadSubset(basePath, baseSnapId + 1, 'gas', fields=fields)
+    snapshot1 = il.snapshot.loadSubset(basePath, baseSnapId + 1, "gas", fields=fields)
 
     allCombinedAttributes = getSameParticleInTwoDataSets(snapshot0, snapshot1, fields)
-    coordinates = np.vstack(allCombinedAttributes['Coordinates'])
-    densities = np.hstack(allCombinedAttributes['Density'])
-    selection = np.floor(np.linspace(0, len(densities)-1, len(densities))).astype(int)
+    coordinates = np.vstack(allCombinedAttributes["Coordinates"])
+    densities = np.hstack(allCombinedAttributes["Density"])
+    selection = np.floor(np.linspace(0, len(densities) - 1, len(densities))).astype(int)
     print("preprocessing")
 
     pcd = o3d.geometry.PointCloud()
@@ -38,10 +40,9 @@ def main():
     oct.convert_from_point_cloud(pcd)
     print("loaded oct")
 
-    viewBox = dict(Min=coordinates[0]-10000, Max=coordinates[0]+10000)
+    viewBox = dict(Min=coordinates[0] - 10000, Max=coordinates[0] + 10000)
     lod = 100
     lodMax = 10000
-
 
     def getIntersectingNodes(node, node_info):
         global idx
@@ -53,12 +54,12 @@ def main():
         # if len(particleArrIds) >= lodMax:
         #     return  early_stop
 
-        if not boxIntersect(node_info.origin, node_info.origin+node_info.size, viewBox["Min"], viewBox["Max"]):
+        if not boxIntersect(node_info.origin, node_info.origin + node_info.size, viewBox["Min"], viewBox["Max"]):
             return early_stop
 
         if isinstance(node, o3d.geometry.OctreeLeafNode):
             rangeLod = min(lod, len(node.indices), lodMax - idx)
-            particleArrIds[idx:idx+rangeLod] = node.indices[0:rangeLod]
+            particleArrIds[idx : idx + rangeLod] = node.indices[0:rangeLod]
             idx += rangeLod
             # rangeLod = min(lod, len(node.indices))
             # for ids in range(rangeLod):
@@ -69,6 +70,7 @@ def main():
         return not early_stop
 
     import time
+
     global idx
     times = []
     for i in range(10):
@@ -84,9 +86,6 @@ def main():
 
     print(np.mean(times))
 
-
-
-
     # o3d.visualization.draw_geometries([oct])
     # print(oct.get_center(), oct.get_max_bound(), oct.get_min_bound())
     # print(coordinates[0])
@@ -100,15 +99,14 @@ def main():
 
     # print(grid.get_center(), grid.get_max_bound(), grid.get_min_bound())
 
-def boxIntersect(minBox,maxBox,minCamera,maxCamera):
-        dx = min(maxBox[0], maxCamera[0]) - max(minBox[0], minCamera[0])
-        dy = min(maxBox[1], maxCamera[1]) - max(minBox[1], minCamera[1])
-        dz = min(maxBox[2], maxCamera[2]) - max(minBox[2], minCamera[2])
-        if (dx >= 0 and dy >= 0 and dz >= 0):
-            return True
-        return False
 
-
+def boxIntersect(minBox, maxBox, minCamera, maxCamera):
+    dx = min(maxBox[0], maxCamera[0]) - max(minBox[0], minCamera[0])
+    dy = min(maxBox[1], maxCamera[1]) - max(minBox[1], minCamera[1])
+    dz = min(maxBox[2], maxCamera[2]) - max(minBox[2], minCamera[2])
+    if dx >= 0 and dy >= 0 and dz >= 0:
+        return True
+    return False
 
 
 # def f_traverse(node, node_info):
@@ -140,8 +138,9 @@ def boxIntersect(minBox,maxBox,minCamera,maxCamera):
 #     return early_stop
 
 
-
-def getSameParticleInTwoDataSets(snapshot0, snapshot1, dataTypes):
+def get_same_particle_in_two_data_sets(
+    snapshot0: Dict[str, Any], snapshot1: Dict[str, Any], dataTypes: List[str]
+) -> Dict[str, Tuple[np.ndarray, np.ndarray]]:
     id_0 = np.array(snapshot0["ParticleIDs"])
     id_1 = np.array(snapshot1["ParticleIDs"])
 
@@ -156,9 +155,9 @@ def getSameParticleInTwoDataSets(snapshot0, snapshot1, dataTypes):
     mask2 = np.zeros(_len)
     mask2[np.array(id_1 - _min, dtype=int)] = 1
     mask = (mask1 * mask2).astype(bool)
-    
-    allCombinedAttributes = dict()
-    allCombinedAttributes['Mask'] = mask
+
+    all_combined_attributes = dict()
+    all_combined_attributes["Mask"] = mask
     for dataType in dataTypes:
         attributesDense0 = snapshot0[dataType]
         attributesDense1 = snapshot1[dataType]
@@ -171,9 +170,10 @@ def getSameParticleInTwoDataSets(snapshot0, snapshot1, dataTypes):
 
         attributesSparse0[np.array(id_0 - _min, dtype=int)] = attributesDense0
         attributesSparse1[np.array(id_1 - _min, dtype=int)] = attributesDense1
-        allCombinedAttributes[dataType] = (attributesSparse0[mask], attributesSparse1[mask])
+        all_combined_attributes[dataType] = (attributesSparse0[mask], attributesSparse1[mask])
 
-    return allCombinedAttributes
+    return all_combined_attributes
+
 
 if __name__ == "__main__":
     main()
