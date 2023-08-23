@@ -11,6 +11,7 @@ from typing import Any, Dict, Tuple, cast
 
 import numpy as np
 import typer
+import uvicorn
 
 from tng_sv.api.download import (
     download_halo,
@@ -371,6 +372,12 @@ def download_web_cmd(simulation_name: str = "TNG50-1", snapshot_idx: int = 0) ->
 def preprocess_web_cmd(simulation_name: str = "TNG50-1", snapshot_idx: int = 0) -> None:
     """Preprocess snapshot for simulation webapp."""
     webapp.preprocess_snap(simulation_name, snapshot_idx)
+
+
+@web_app.command(name="serve")
+def start_preprocess_webservice(host: str = "127.0.0.1", port: int = 8999) -> None:
+    """Preprocess snapshot for simulation webapp."""
+    uvicorn.run("tng_sv.serve:app", host=host, port=port, log_level="info")
 
 
 def cli() -> int:

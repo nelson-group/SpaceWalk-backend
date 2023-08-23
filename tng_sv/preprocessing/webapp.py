@@ -6,12 +6,12 @@ from datetime import datetime
 from itertools import chain
 from typing import Any, Dict, List, Optional, Tuple
 
-import illustris_python as il
 import numpy as np
 import open3d as o3d
 from numba import jit
 from tqdm import tqdm
 
+import illustris_python as il
 from tng_sv.data.dir import get_webapp_base_path
 
 logger = logging.getLogger(__name__)
@@ -58,15 +58,15 @@ def get_same_particle_in_two_data_sets(  # pylint: disable=too-many-locals
     return all_combined_attributes  # type: ignore
 
 
-def load_datasets(base_path: str, snap_idx: int, fields: List[str]):
+def load_datasets(base_path: str, snap_idx: int, fields: List[str]):  # pylint: disable=c-extension-no-member
     """Load two datasets."""
     all_loaded_snaps = []
 
     # Load snapshot n and n + 1
     for i in range(snap_idx, snap_idx + 2):
         snap_dict = {}
-        snap_dict["snapData"] = il.snapshot.loadSubset(base_path, i, "gas", fields=fields)
-        snap_dict["snapInfo"] = il.groupcat.loadHeader(base_path, i)
+        snap_dict["snapData"] = il.snapshot.loadSubset(base_path, i, "gas", fields=fields)  # type: ignore[attr-defined]
+        snap_dict["snapInfo"] = il.groupcat.loadHeader(base_path, i)  # type: ignore[attr-defined]
         all_loaded_snaps.append(snap_dict)
 
     return all_loaded_snaps
@@ -99,7 +99,7 @@ def spline_calculation(y: np.ndarray, dydx: np.ndarray) -> np.ndarray:  # pylint
     return c
 
 
-def generate_new_octree(
+def generate_new_octree(  # pylint: disable=too-many-locals
     size_per_leaf: int,
     box_size: int,
     all_combined_attributes: Dict[str, Tuple[np.ndarray, np.ndarray]],

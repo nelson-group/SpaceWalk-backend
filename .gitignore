@@ -13,3 +13,5 @@ data/
 .vscode
 .env
 *.png
+
+illustris_python

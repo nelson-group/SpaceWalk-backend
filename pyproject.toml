@@ -17,6 +17,7 @@ dependencies = [
     "requests",
     "tqdm",
     "numpy",
+    "numba",
     "h5py",
     "vtk",
     "matplotlib",
