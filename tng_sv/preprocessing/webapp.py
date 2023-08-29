@@ -60,6 +60,7 @@ def get_same_particle_in_two_data_sets(  # pylint: disable=too-many-locals
 
 def load_datasets(base_path: str, snap_idx: int, fields: List[str]):  # pylint: disable=c-extension-no-member
     """Load two datasets."""
+    # pylint: disable=c-extension-no-member
     all_loaded_snaps = []
 
     # Load snapshot n and n + 1
@@ -153,6 +154,8 @@ def generate_new_octree(  # pylint: disable=too-many-locals
 
     logger.info("start octree calc")
     now = datetime.now()
+    global IDX  # pylint: disable=global-statement
+    IDX = 0
     oct_tree.traverse(change_ids_with_list_id)
     finish = datetime.now()
     logger.info("Octree calculated. Duration: %(duration)s", {"duration": (finish - now).total_seconds()})
