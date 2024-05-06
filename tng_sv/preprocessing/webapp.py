@@ -18,6 +18,22 @@ logger = logging.getLogger(__name__)
 
 IDX = 0
 
+def filter_snapshots(all_loaded_snaps: dict[str, Any], fields: list[str], percentage: float = 0.99, sort_field: str = "Density"):
+    """Remove given precentage of data which is of lower sort field."""
+    for i in range(2):
+        data = all_loaded_snaps[i]["snapData"][sort_field]
+        arg_data = np.argsort(data)
+        idx = int(len(data) * percentage)
+
+        relevant_idxs = arg_data[idx:]
+
+        for field in fields:
+            all_loaded_snaps[i]["snapData"][field] = all_loaded_snaps[i]["snapData"][field][relevant_idxs]
+
+    return all_loaded_snaps
+
+
+
 
 def get_same_particle_in_two_data_sets(  # pylint: disable=too-many-locals
     snapshot0: Dict[str, Any], snapshot1: Dict[str, Any], data_types: List[str]
@@ -244,6 +260,11 @@ def preprocess_snap(  # pylint: disable=too-many-locals, too-many-branches, too-
 
     # load two snapshots n and n+1
     all_loaded_snaps = load_datasets(base_path, snap_idx, fields)
+
+    filter_snapshots(all_loaded_snaps, necessary_fields)
+
+    # Filter out 97% of particles
+    # take top 3 % of density, remove rest
 
     # Load
     snapshot_n = 0
