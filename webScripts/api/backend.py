@@ -1,5 +1,6 @@
 from typing import Optional
 
+from datclasses import dataclass
 from fastapi import FastAPI, HTTPException, status
 from fastapi.responses import JSONResponse
 import illustris_python as il
@@ -64,6 +65,19 @@ def data_basedir(_simulation: str, snap_id: int) -> Path:
     return Path(BASE.joinpath(f"snapdir_{str(snap_id).zfill(3)}/")).expanduser()
 
 
+@dataclass
+class ListOfLeafs:
+    list_of_leafs: np.array
+    list_of_leafs_scan: np.array
+
+    def __getitem__(self, key: int) -> np.array:
+        begin = list_of_leafs_scan[key]
+        end = list_of_leafs_scan[key+1] if len(list_of_leafs_scan) < key else -1
+        return list_of_leafs[begin:end]
+
+
+
+
 class DataCache:
     def __init__(self) -> None:
         self._cache = dict()
@@ -72,7 +86,7 @@ class DataCache:
         dictkey = simulation + str(snap_id)
         if dictkey in self._cache:
             return self._cache[dictkey]
-        
+
         basedir = data_basedir(simulation, snap_id)
         octree = o3d.io.read_octree(str(basedir.joinpath(O3D_OCTREE)))
 
@@ -81,7 +95,12 @@ class DataCache:
         densities = np.load(basedir.joinpath("Density.npy"))
         coordinates = np.load(basedir.joinpath("Coordinates.npy"))
 
-        particle_list_of_leafs = pickle.load(basedir.joinpath("particleListOfLeafs.obj").open(mode="rb"))
+        leafs = np.load(basedir.joinpath("particle_list_of_leafs_Density.npy"))
+        leafs_scan = np.load(basedir.joinpath("particle_list_of_leafs_Density_scan.npy"))
+
+        # type: list[list[int]]
+        # particle_list_of_leafs = pickle.load(basedir.joinpath("particleListOfLeafs.obj").open(mode="rb"))
+        particle_list_of_leafs = ListOfLeafs(leafs, leafs_scan)
         density_quantiles = np.quantile(densities.flatten(), np.linspace(0, 1, 100))
 
         self._cache[dictkey] = {"particle_list_of_leafs": particle_list_of_leafs, "octree": octree, "splines": splines, "velocities": velocities, "densities": densities, "coordinates": coordinates, "density_quantiles": density_quantiles.tolist()}
