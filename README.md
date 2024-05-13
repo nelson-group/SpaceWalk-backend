@@ -7,6 +7,34 @@ A CLI can be used to preprocess the data and get the proper data and format for 
 Dowload this repo
 Pyhton >= 3.10
 
-Download raw data:
+## Setup
 
-## CLI Usage
+```
+make venv
+source venv/bin/activate # to activate the virtual environment
+```
+
+## CLI Usage Download and Preprocess
+
+```
+tng-sv-cli web download --simulation-name TNG50-4 --snapshot-idx NR
+tng-sv-cli web preprocess --simulation-name TNG50-4 --snapshot-idx NR
+
+tng-sv-cli web batch-download --simulation-name TNG50-4 --snapshot-idx NR
+tng-sv-cli web batch-preprocess --simulation-name TNG50-4 --snapshot-idx NR
+```
+
+## Dev Python Backend
+
+```
+PYTHONPATH=. fastapi dev webScripts/api/backend.py --host 0.0.0.0 --port 9999
+```
+
+## Frontend
+
+Go into frontend repository. Maybe adjust src/index.ts:139 const url to backend ip and port
+
+```
+npm install
+npm run start
+```
