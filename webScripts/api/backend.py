@@ -1,20 +1,21 @@
-from typing import Optional
-
-from datclasses import dataclass
-from fastapi import FastAPI, HTTPException, status
-from fastapi.responses import JSONResponse
-import illustris_python as il
-from pydantic import BaseModel
-from pathlib import Path
-import open3d as o3d
 import pickle
-import numpy as np
+import re
+import time
 from os import listdir
 from os.path import isdir, join
-import re
-from webScripts.octree.OctreeTraversal import OctreeTraversal, ViewBox
+from pathlib import Path
+from typing import Optional
+
+import numpy as np
+import open3d as o3d
+from datclasses import dataclass
+from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-import time
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
+
+import illustris_python as il
+from webScripts.octree.OctreeTraversal import OctreeTraversal, ViewBox
 
 O3D_OCTREE = "o3dOctree.json"
 BASE = Path("D:/VMShare/Documents/data/")
@@ -45,18 +46,18 @@ class CameraInformation(BaseModel):
     y: float
     z: float
     size: float
-    
+
     def to_viewbox(self) -> ViewBox:
         """Return camera position as Viewbox."""
-        boxMin = np.array([self.x-self.size//2, self.y-self.size//2, self.z-self.size//2])
-        boxMax = np.array([self.x+self.size//2, self.y+self.size//2, self.z+self.size//2])
+        boxMin = np.array([self.x - self.size // 2, self.y - self.size // 2, self.z - self.size // 2])
+        boxMax = np.array([self.x + self.size // 2, self.y + self.size // 2, self.z + self.size // 2])
         return ViewBox(boxMin, boxMax)
 
 
 class ClientState(BaseModel):
     node_indices: list[int]
     level_of_detail: dict[int, int]
-    batch_size_lod: int # Number of particles per leaf to be loaded
+    batch_size_lod: int  # Number of particles per leaf to be loaded
     camera_information: CameraInformation
 
 
@@ -72,10 +73,8 @@ class ListOfLeafs:
 
     def __getitem__(self, key: int) -> np.array:
         begin = list_of_leafs_scan[key]
-        end = list_of_leafs_scan[key+1] if len(list_of_leafs_scan) < key else -1
+        end = list_of_leafs_scan[key + 1] if len(list_of_leafs_scan) < key else -1
         return list_of_leafs[begin:end]
-
-
 
 
 class DataCache:
@@ -103,7 +102,15 @@ class DataCache:
         particle_list_of_leafs = ListOfLeafs(leafs, leafs_scan)
         density_quantiles = np.quantile(densities.flatten(), np.linspace(0, 1, 100))
 
-        self._cache[dictkey] = {"particle_list_of_leafs": particle_list_of_leafs, "octree": octree, "splines": splines, "velocities": velocities, "densities": densities, "coordinates": coordinates, "density_quantiles": density_quantiles.tolist()}
+        self._cache[dictkey] = {
+            "particle_list_of_leafs": particle_list_of_leafs,
+            "octree": octree,
+            "splines": splines,
+            "velocities": velocities,
+            "densities": densities,
+            "coordinates": coordinates,
+            "density_quantiles": density_quantiles.tolist(),
+        }
         return self._cache[dictkey]
 
 
@@ -131,31 +138,23 @@ def get_init_data(simulation: str) -> Optional[dict[str, float | list[float]]]:
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
 
-
-
-
 @app.get("/v1/get/init/{simulation}/{snap_id}")
-async def get_init(
-    simulation: str,
-    snap_id: int
-) -> JSONResponse:
+async def get_init(simulation: str, snap_id: int) -> JSONResponse:
     data = cache.get_data(simulation, snap_id)
     init_data = get_init_data(simulation)
 
-    return JSONResponse({
-        "density_quantiles": data["density_quantiles"],
-        "n_quantiles": len(data["density_quantiles"]),
-        "available_snaps": init_data["all_possible_snaps"],
-        "BoxSize": init_data["BoxSize"]
-    })
+    return JSONResponse(
+        {
+            "density_quantiles": data["density_quantiles"],
+            "n_quantiles": len(data["density_quantiles"]),
+            "available_snaps": init_data["all_possible_snaps"],
+            "BoxSize": init_data["BoxSize"],
+        }
+    )
 
 
 @app.post("/v1/get/splines/{simulation}/{snap_id}")
-async def get_splines(
-    client_state: ClientState,
-    simulation: str,
-    snap_id: int
-) -> JSONResponse:
+async def get_splines(client_state: ClientState, simulation: str, snap_id: int) -> JSONResponse:
     """Return splines for a specific camera position and snap_id."""
 
     data = cache.get_data(simulation, snap_id)
@@ -169,10 +168,9 @@ async def get_splines(
     octree.traverse(octree_traversal.getIntersectingNodes)
     node_indices = np.array(octree_traversal.particleArrIds)
 
-
     # Load list of leaves with list of particlIdx's per leaf
     particle_list_of_leafs: list[list[int]] = data["particle_list_of_leafs"]
-    # Get number of particles per leaf (=total number of particles to load in one level of detail) 
+    # Get number of particles per leaf (=total number of particles to load in one level of detail)
     lod_indices_per_leaf = client_state.batch_size_lod
     client_node_indices = np.array(client_state.node_indices)
     client_level_of_detail = client_state.level_of_detail
@@ -182,7 +180,6 @@ async def get_splines(
     for node_idx in node_indices:
         length_particles_in_leafs[int(node_idx)] = len(particle_list_of_leafs[node_idx])
     # length_particles_in_leafs = {node: len(node) for node in particle_list_of_leafs[node_idx]}
-
 
     # Get current level of detail only for current leaf
     level_of_detail = {lod: 0 for lod in node_indices}
@@ -199,13 +196,12 @@ async def get_splines(
         # Check if there are nnot enough particles in every leaf, if so reset end of indices to last element in this leaf
         if length_particles_in_leafs[leaf] < lod_indices_end[leaf]:
             lod_indices_end[leaf] = length_particles_in_leafs[leaf] - 1
-        
-        # Create flattened array of all relevant particleIdx's
-        relevant_ids.extend(particle_list_of_leafs[leaf][lod_indices_start[leaf]:lod_indices_end[leaf]])
 
+        # Create flattened array of all relevant particleIdx's
+        relevant_ids.extend(particle_list_of_leafs[leaf][lod_indices_start[leaf] : lod_indices_end[leaf]])
 
     # Increase Level of details
-    level_of_detail = {str(lod): int(level_of_detail.get(lod)+1) for lod in level_of_detail}
+    level_of_detail = {str(lod): int(level_of_detail.get(lod) + 1) for lod in level_of_detail}
     splines = splines[relevant_ids]
     splines_a = splines[:, 0].flatten()
     splines_b = splines[:, 1].flatten()
@@ -221,21 +217,22 @@ async def get_splines(
 
     client_level_of_detail.update(level_of_detail)
 
-    return JSONResponse({
-        "level_of_detail": client_level_of_detail,
-        "relevant_ids": np.array(relevant_ids).tolist(),
-        "node_indices": list(client_level_of_detail.keys()),
-        "coordinates": coordinates[relevant_ids].tolist(),
-        "velocities": velocities[relevant_ids].tolist(),
-        "densities": densities.T[relevant_ids].flatten().tolist(),
-        "splines_a": splines_a.tolist(),
-        "splines_b": splines_b.tolist(),
-        "splines_c": splines_c.tolist(),
-        "splines_d": splines_d.tolist(),
-        "min_density": min_den,
-        "max_density": max_den,
-        "nParticles": nParticles,
-        "density_quantiles": data["density_quantiles"],
-        "snapnum": snap_id
-    })
-
+    return JSONResponse(
+        {
+            "level_of_detail": client_level_of_detail,
+            "relevant_ids": np.array(relevant_ids).tolist(),
+            "node_indices": list(client_level_of_detail.keys()),
+            "coordinates": coordinates[relevant_ids].tolist(),
+            "velocities": velocities[relevant_ids].tolist(),
+            "densities": densities.T[relevant_ids].flatten().tolist(),
+            "splines_a": splines_a.tolist(),
+            "splines_b": splines_b.tolist(),
+            "splines_c": splines_c.tolist(),
+            "splines_d": splines_d.tolist(),
+            "min_density": min_den,
+            "max_density": max_den,
+            "nParticles": nParticles,
+            "density_quantiles": data["density_quantiles"],
+            "snapnum": snap_id,
+        }
+    )
