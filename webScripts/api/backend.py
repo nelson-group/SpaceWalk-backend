@@ -8,7 +8,7 @@ from typing import Optional
 
 import numpy as np
 import open3d as o3d
-from datclasses import dataclass
+from dataclasses import dataclass
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -19,16 +19,16 @@ from webScripts.octree.OctreeTraversal import OctreeTraversal, ViewBox
 
 O3D_OCTREE = "o3dOctree.json"
 BASE = Path("D:/VMShare/Documents/data/")
+BASE = Path("/home/tng/Documents/data/tng/webapp/")
 # BASE = Path("~/Documents/data/tng/manual_download/")
 
 app = FastAPI()
 
 
 origins = [
-    "http://localhost.tiangolo.com",
-    "https://localhost.tiangolo.com",
     "http://localhost",
     "http://localhost:8080",
+    "http://94.16.31.82:8080",
 ]
 
 
@@ -61,9 +61,9 @@ class ClientState(BaseModel):
     camera_information: CameraInformation
 
 
-def data_basedir(_simulation: str, snap_id: int) -> Path:
+def data_basedir(simulation: str, snap_id: int) -> Path:
     """Return path to relevant data basedir."""
-    return Path(BASE.joinpath(f"snapdir_{str(snap_id).zfill(3)}/")).expanduser()
+    return Path(BASE.joinpath(f"{simulation}/snapdir_{str(snap_id).zfill(3)}/")).expanduser()
 
 
 @dataclass
@@ -72,9 +72,9 @@ class ListOfLeafs:
     list_of_leafs_scan: np.array
 
     def __getitem__(self, key: int) -> np.array:
-        begin = list_of_leafs_scan[key]
-        end = list_of_leafs_scan[key + 1] if len(list_of_leafs_scan) < key else -1
-        return list_of_leafs[begin:end]
+        begin = self.list_of_leafs_scan[key]
+        end = self.list_of_leafs_scan[key + 1] if key < len(self.list_of_leafs_scan) else -1
+        return self.list_of_leafs[begin:end]
 
 
 class DataCache:
@@ -119,17 +119,18 @@ cache = DataCache()
 
 def get_init_data(simulation: str) -> Optional[dict[str, float | list[float]]]:
     return_data = {}
-    only_dirs = [f for f in listdir(BASE) if isdir(join(BASE, f))]
+    only_dirs = [f for f in listdir(BASE / simulation) if isdir(join(BASE / simulation, f))]
     return_data["all_possible_snaps"] = []
 
     for dir in only_dirs:
         if re.search(r"snapdir_", dir):
             dir_splitted = dir.split("_")
             return_data["all_possible_snaps"].append(float(dir_splitted[-1]))
+            return_data["all_possible_snaps"].sort()
 
         if re.search(r"groups_", dir) and not "BoxSize" in return_data:
             dir_splitted = dir.split("_")
-            return_data["BoxSize"] = il.groupcat.loadHeader(str(BASE), float(dir_splitted[-1]))["BoxSize"]
+            return_data["BoxSize"] = il.groupcat.loadHeader(str(BASE / simulation), float(dir_splitted[-1]))["BoxSize"]
 
     return_data["all_possible_snaps"].pop(-1)
     if "BoxSize" in return_data and len(return_data["all_possible_snaps"]) > 0:

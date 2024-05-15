@@ -261,7 +261,7 @@ def preprocess_snap(  # pylint: disable=too-many-locals, too-many-branches, too-
     # load two snapshots n and n+1
     all_loaded_snaps = load_datasets(base_path, snap_idx, fields)
 
-    filter_snapshots(all_loaded_snaps, necessary_fields)
+    all_loaded_snaps = filter_snapshots(all_loaded_snaps, fields)
 
     # Filter out 97% of particles
     # take top 3 % of density, remove rest
