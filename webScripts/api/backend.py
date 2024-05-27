@@ -28,7 +28,9 @@ app = FastAPI()
 origins = [
     "http://localhost",
     "http://localhost:8080",
+    "http://94.16.31.82",
     "http://94.16.31.82:8080",
+    "http://94.16.31.82:9998",
 ]
 
 
@@ -96,6 +98,7 @@ class DataCache:
 
         leafs = np.load(basedir.joinpath("particle_list_of_leafs_Density.npy"))
         leafs_scan = np.load(basedir.joinpath("particle_list_of_leafs_Density_scan.npy"))
+        voronoi_diameter_extended = np.load(basedir.joinpath("voronoi_diameter_extended.npy"))
 
         # type: list[list[int]]
         # particle_list_of_leafs = pickle.load(basedir.joinpath("particleListOfLeafs.obj").open(mode="rb"))
@@ -110,6 +113,7 @@ class DataCache:
             "densities": densities,
             "coordinates": coordinates,
             "density_quantiles": density_quantiles.tolist(),
+            "voronoi_diameter_extended": voronoi_diameter_extended
         }
         return self._cache[dictkey]
 
@@ -164,6 +168,7 @@ async def get_splines(client_state: ClientState, simulation: str, snap_id: int) 
     velocities = data["velocities"]
     densities = data["densities"]
     coordinates = data["coordinates"]
+    voronoi_diameter_extended = data["voronoi_diameter_extended"]
 
     octree_traversal = OctreeTraversal(client_state.camera_information.to_viewbox())
     octree.traverse(octree_traversal.getIntersectingNodes)
@@ -199,7 +204,7 @@ async def get_splines(client_state: ClientState, simulation: str, snap_id: int) 
             lod_indices_end[leaf] = length_particles_in_leafs[leaf] - 1
 
         # Create flattened array of all relevant particleIdx's
-        relevant_ids.extend(particle_list_of_leafs[leaf][lod_indices_start[leaf] : lod_indices_end[leaf]])
+        relevant_ids.extend(particle_list_of_leafs[leaf][lod_indices_start[leaf] : lod_indices_end[leaf]+1])
 
     # Increase Level of details
     level_of_detail = {str(lod): int(level_of_detail.get(lod) + 1) for lod in level_of_detail}
@@ -226,6 +231,7 @@ async def get_splines(client_state: ClientState, simulation: str, snap_id: int) 
             "coordinates": coordinates[relevant_ids].tolist(),
             "velocities": velocities[relevant_ids].tolist(),
             "densities": densities.T[relevant_ids].flatten().tolist(),
+            "voronoi_diameter_extended": voronoi_diameter_extended[relevant_ids].tolist(),
             "splines_a": splines_a.tolist(),
             "splines_b": splines_b.tolist(),
             "splines_c": splines_c.tolist(),
