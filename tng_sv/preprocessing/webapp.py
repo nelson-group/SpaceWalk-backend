@@ -233,6 +233,7 @@ def preprocess_snap(  # pylint: disable=too-many-locals, too-many-branches, too-
     fields: Optional[List[str]] = None,
     size_per_leaf=350,
     sort_fields: Optional[List[str]] = None,
+    filter_out_percentage: float = 0.95,
 ) -> None:
     """Preprocess a given snap.
 
@@ -261,7 +262,7 @@ def preprocess_snap(  # pylint: disable=too-many-locals, too-many-branches, too-
     # load two snapshots n and n+1
     all_loaded_snaps = load_datasets(base_path, snap_idx, fields)
 
-    all_loaded_snaps = filter_snapshots(all_loaded_snaps, fields)
+    all_loaded_snaps = filter_snapshots(all_loaded_snaps, fields, percentage=filter_out_percentage)
 
     # Filter out 97% of particles
     # take top 3 % of density, remove rest
