@@ -61,6 +61,7 @@ class ClientState(BaseModel):
     level_of_detail: dict[int, int]
     batch_size_lod: int  # Number of particles per leaf to be loaded
     camera_information: CameraInformation
+    percentage: float = 1.0  # Perentage of leaf node data which should be loaded
 
 
 def data_basedir(simulation: str, snap_id: int) -> Path:
@@ -72,6 +73,20 @@ def data_basedir(simulation: str, snap_id: int) -> Path:
 class ListOfLeafs:
     list_of_leafs: np.array
     list_of_leafs_scan: np.array
+
+    def get(self, key: int, percentage: float=1.0) -> np.array:
+        """Get only a certain percentage of the data in a leaf node."""
+        # Cap at 100%
+        percentage = min(1.0, percentage)
+        length = len(self[key])
+
+        # If the leaf node is empty return an empty array
+        if length == 0:
+            return np.array([])
+
+        # Return at least one element if it exists
+        length = max(int(length * percentage), 1)
+        return self[key][:length]
 
     def __getitem__(self, key: int) -> np.array:
         begin = self.list_of_leafs_scan[key]
@@ -184,7 +199,7 @@ async def get_splines(client_state: ClientState, simulation: str, snap_id: int) 
     # List of numbers of total particles per leaf
     length_particles_in_leafs = {}
     for node_idx in node_indices:
-        length_particles_in_leafs[int(node_idx)] = len(particle_list_of_leafs[node_idx])
+        length_particles_in_leafs[int(node_idx)] = len(particle_list_of_leafs.get(node_idx, client_state.percentage))
     # length_particles_in_leafs = {node: len(node) for node in particle_list_of_leafs[node_idx]}
 
     # Get current level of detail only for current leaf
@@ -193,8 +208,8 @@ async def get_splines(client_state: ClientState, simulation: str, snap_id: int) 
     for lod in client_node_indices[node_indices_in_old_and_current_state]:
         level_of_detail[lod] = client_level_of_detail.get(lod)
 
-    lod_indices_start = {lod: level_of_detail.get(lod) * lod_indices_per_leaf for lod in node_indices}
-    lod_indices_end = {lod: (level_of_detail.get(lod) + 1) * lod_indices_per_leaf for lod in node_indices}
+    lod_indices_start = {lod: level_of_detail.get(lod) for lod in node_indices}
+    lod_indices_end = {lod: (level_of_detail.get(lod) + lod_indices_per_leaf) for lod in node_indices}
 
     relevant_ids = list()
     # Out of bounds check
@@ -207,7 +222,7 @@ async def get_splines(client_state: ClientState, simulation: str, snap_id: int) 
         relevant_ids.extend(particle_list_of_leafs[leaf][lod_indices_start[leaf] : lod_indices_end[leaf]+1])
 
     # Increase Level of details
-    level_of_detail = {str(lod): int(level_of_detail.get(lod) + 1) for lod in level_of_detail}
+    level_of_detail = {str(lod): int(level_of_detail.get(lod) + lod_indices_per_leaf) for lod in level_of_detail}
     splines = splines[relevant_ids]
     splines_a = splines[:, 0].flatten()
     splines_b = splines[:, 1].flatten()
