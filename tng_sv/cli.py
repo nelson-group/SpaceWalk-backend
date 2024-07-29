@@ -36,6 +36,7 @@ from tng_sv.data.field_type import FieldType
 from tng_sv.data.part_type import PartType
 from tng_sv.data.utils import (
     bounds,
+    copy_group_directories,
     combine_snapshot,
     create_delaunay_copy,
     create_delaunay_symlink,
@@ -376,6 +377,8 @@ def preprocess_web_cmd(simulation_name: str = "TNG50-1", snapshot_idx: int = 0, 
         download_webapp_groups(simulation_name, snapshot_idx)
         download_webapp_snapshot(simulation_name, snapshot_idx + 1)
         download_webapp_groups(simulation_name, snapshot_idx + 1)
+    else:
+        copy_group_directories(data_path, simulation_name)
     webapp.preprocess_snap(simulation_name, snapshot_idx, filter_out_percentage=filter_out_percentage, data_path=data_path)
 
 

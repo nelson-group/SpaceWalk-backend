@@ -20,6 +20,7 @@ from tng_sv.data.dir import (
     get_scalar_field_experiment_path,
     get_scalar_field_experiment_symlink_path,
     get_simulation_dir,
+    get_webapp_base_path,
     get_snapshot_index_path,
 )
 from tng_sv.data.field_type import FieldType
@@ -193,3 +194,10 @@ def bounds(simulation_name: str, part_type: PartType) -> None:
     writer.SetInputConnection(outline_source.GetOutputPort(0))
     writer.SetFileName(simulation_dir.joinpath("bounds.pvd"))
     writer.Write()
+
+
+def copy_group_directories(data_path: Path, simulation_name: str) -> None:
+    """Copy group dirs from the data path to the simulation data path."""
+    path = get_webapp_base_path(simulation_name)
+    for group_dir in data_path.glob(r"groups_*"):
+        shutil.copytree(group_dir, path / group_dir.name, dirs_exist_ok=False)
