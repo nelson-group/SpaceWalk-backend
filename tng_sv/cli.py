@@ -369,25 +369,26 @@ def download_web_cmd(simulation_name: str = "TNG50-1", snapshot_idx: int = 0) ->
 
 
 @web_app.command(name="preprocess")
-def preprocess_web_cmd(simulation_name: str = "TNG50-1", snapshot_idx: int = 0, filter_out_percentage: float = 0.95) -> None:
+def preprocess_web_cmd(simulation_name: str = "TNG50-1", snapshot_idx: int = 0, filter_out_percentage: float = 0.95, data_path: Optional[Path] = None) -> None:
     """Preprocess snapshot for simulation webapp."""
-    download_webapp_snapshot(simulation_name, snapshot_idx)
-    download_webapp_groups(simulation_name, snapshot_idx)
-    download_webapp_snapshot(simulation_name, snapshot_idx + 1)
-    download_webapp_groups(simulation_name, snapshot_idx + 1)
-    webapp.preprocess_snap(simulation_name, snapshot_idx, filter_out_percentage)
+    if not data_path:
+        download_webapp_snapshot(simulation_name, snapshot_idx)
+        download_webapp_groups(simulation_name, snapshot_idx)
+        download_webapp_snapshot(simulation_name, snapshot_idx + 1)
+        download_webapp_groups(simulation_name, snapshot_idx + 1)
+    webapp.preprocess_snap(simulation_name, snapshot_idx, filter_out_percentage=filter_out_percentage, data_path=data_path)
 
 
 @web_app.command(name="batch-preprocess")
 def batch_preprocess_web_cmd(
-    simulation_name: str = "TNG50-1", snapshot_idx: int = 0, end_snapshot_idx: Optional[int] = None, filter_out_percentage: float = 0.95
+    simulation_name: str = "TNG50-1", snapshot_idx: int = 0, end_snapshot_idx: Optional[int] = None, filter_out_percentage: float = 0.95, data_path: Optional[Path] = None
 ) -> None:
     """Sequentiall preprocess for the whole simulation."""
     amount = end_snapshot_idx or get_snapshot_amount(simulation_name)
     _range = np.arange(snapshot_idx, amount, 1)
 
     for snap in _range:
-        preprocess_web_cmd(simulation_name, snap, filter_out_percentage)
+        preprocess_web_cmd(simulation_name, snap, filter_out_percentage=filter_out_percentage, data_path=data_path)
 
 
 @web_app.command(name="batch-download")

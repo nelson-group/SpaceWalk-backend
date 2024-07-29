@@ -1,5 +1,6 @@
 """Module for the webapp preprocessing."""
 
+import os
 import logging
 import os.path as Path
 from datetime import datetime
@@ -234,12 +235,19 @@ def preprocess_snap(  # pylint: disable=too-many-locals, too-many-branches, too-
     size_per_leaf=350,
     sort_fields: Optional[List[str]] = None,
     filter_out_percentage: float = 0.95,
+    data_path: Optional[Path] = None,
 ) -> None:
     """Preprocess a given snap.
 
     Assumes that the data is downloaded.
     """
-    base_path = str(get_webapp_base_path(simulation_name))
+    if not data_path:
+        source_base_path = str(get_webapp_base_path(simulation_name))
+    else:
+        source_base_path = data_path / simulation_name / "output"
+
+    dist_base_path = str(get_webapp_base_path(simulation_name))
+
     necessary_fields = [
         "Coordinates",
         "ParticleIDs",
@@ -260,7 +268,7 @@ def preprocess_snap(  # pylint: disable=too-many-locals, too-many-branches, too-
             fields.append(field)
 
     # load two snapshots n and n+1
-    all_loaded_snaps = load_datasets(base_path, snap_idx, fields)
+    all_loaded_snaps = load_datasets(source_base_path, snap_idx, fields)
 
     all_loaded_snaps = filter_snapshots(all_loaded_snaps, fields, percentage=filter_out_percentage)
 
@@ -279,7 +287,7 @@ def preprocess_snap(  # pylint: disable=too-many-locals, too-many-branches, too-
     )
 
     # snapdir path
-    snapdir_path = base_path + "/snapdir_" + str(snap_idx + snapshot_n).zfill(3) + "/"
+    snapdir_path = dist_base_path + "/snapdir_" + str(snap_idx + snapshot_n).zfill(3) + "/"
 
     box_size = all_loaded_snaps[0]["snapInfo"]["BoxSize"]
     (oct_tree, indices_for_octree) = generate_new_octree(size_per_leaf, box_size, all_combined_attributes, "Density")
@@ -310,6 +318,7 @@ def preprocess_snap(  # pylint: disable=too-many-locals, too-many-branches, too-
     logger.info("Safe Octree to %(file_name)s", {"file_name": file_name})
 
     # Try to write octree and fields to disk
+    os.makedirs(os.path.dirname(file_name), exist_ok=True)
     if o3d.io.write_octree(file_name, oct_tree):
         logger.info("Object successfully saved to %(file_name)s, Saving additional data:", {"file_name": file_name})
 
