@@ -378,7 +378,7 @@ def preprocess_web_cmd(simulation_name: str = "TNG50-1", snapshot_idx: int = 0, 
         download_webapp_snapshot(simulation_name, snapshot_idx + 1)
         download_webapp_groups(simulation_name, snapshot_idx + 1)
     else:
-        copy_group_directories(data_path, simulation_name)
+        copy_group_directories(data_path, simulation_name, snapshot_idx)
     webapp.preprocess_snap(simulation_name, snapshot_idx, filter_out_percentage=filter_out_percentage, data_path=data_path)
 
 

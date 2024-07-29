@@ -196,8 +196,8 @@ def bounds(simulation_name: str, part_type: PartType) -> None:
     writer.Write()
 
 
-def copy_group_directories(data_path: Path, simulation_name: str) -> None:
+def copy_group_directories(data_path: Path, simulation_name: str, snapshot_idx: int) -> None:
     """Copy group dirs from the data path to the simulation data path."""
     path = get_webapp_base_path(simulation_name)
-    for group_dir in data_path.glob(r"groups_*"):
-        shutil.copytree(group_dir, path / group_dir.name, dirs_exist_ok=False)
+    group_dir = data_path / simulation_name / "output" / f"groups_{snapshot_idx:03d}"
+    shutil.copytree(group_dir, path / group_dir.name, dirs_exist_ok=False)
