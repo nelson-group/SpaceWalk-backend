@@ -244,7 +244,7 @@ def preprocess_snap(  # pylint: disable=too-many-locals, too-many-branches, too-
     if not data_path:
         source_base_path = str(get_webapp_base_path(simulation_name))
     else:
-        source_base_path = data_path / simulation_name / "output"
+        source_base_path = str(data_path / simulation_name / "output")
 
     dist_base_path = str(get_webapp_base_path(simulation_name))
 
