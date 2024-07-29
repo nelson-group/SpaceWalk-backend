@@ -17,6 +17,8 @@ source venv/bin/activate # to activate the virtual environment
 ## CLI Usage Download and Preprocess
 
 ```
+export TNG_TOKEN="..."
+
 tng-sv-cli web download --simulation-name TNG50-4 --snapshot-idx NR
 tng-sv-cli web preprocess --simulation-name TNG50-4 --snapshot-idx NR
 

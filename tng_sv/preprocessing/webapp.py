@@ -2,10 +2,11 @@
 
 import os
 import logging
-import os.path as Path
+import os.path
 from datetime import datetime
 from itertools import chain
 from typing import Any, Dict, List, Optional, Tuple
+from pathlib import Path
 
 import numpy as np
 import open3d as o3d
@@ -295,7 +296,7 @@ def preprocess_snap(  # pylint: disable=too-many-locals, too-many-branches, too-
     # --------------Spline Array bauen ---------------
     cubic_hermite_splines = None
     file_name = snapdir_path + "splines.npy"
-    if Path.isfile(file_name):
+    if os.path.isfile(file_name):
         logger.info("Spline calc skipped. Already there!")
     else:
         logger.info("start spline calc")
@@ -325,7 +326,7 @@ def preprocess_snap(  # pylint: disable=too-many-locals, too-many-branches, too-
         write_particle_of_leafs_arrays(snapdir_path, sort_fields, all_combined_attributes, indices_for_octree)
 
         file_name = snapdir_path + "splines.npy"
-        if not Path.isfile(file_name):
+        if not os.path.isfile(file_name):
             if cubic_hermite_splines is not None:
                 np.save(file_name, cubic_hermite_splines)
                 logger.info("Saved: %(file_name)s", {"file_name": file_name})
