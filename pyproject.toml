@@ -7,8 +7,8 @@ requires = [
 ]
 
 [project]
-name = "tng_sv"
-description = "tng sv"
+name = "spacewalk_backend"
+description = "This is the backend CLI for SpaceWalk."
 requires-python = ">=3.7"
 # version = "0.0.1"
 dynamic = ["version"]

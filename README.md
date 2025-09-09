@@ -1,11 +1,11 @@
-# TNG Backend
+# SpaceWalk - Backend
 
-# TNG Preprocessing
-A CLI can be used to preprocess the data and get the proper data and format for the backend. This process downloads the data, preprocesses the data, saves the needed particle properties and generates the corresponding octree.
+This CLI can be used to preprocess the data and get the proper data and format for the backend. This process downloads the data, preprocesses the data, saves the needed particle properties and generates the corresponding octree.
 
 ## Preliminary
-Dowload this repo
-Pyhton >= 3.10
+
+Download this repo
+Python >= 3.10
 
 ## Setup
 
@@ -40,3 +40,8 @@ Go into frontend repository. Maybe adjust src/index.ts:139 const url to backend 
 npm install
 npm run start
 ```
+
+# Credits
+
+Originally writted by Nicolas Bender, Marc Burg, and Jonannes Maul as part of a research project at Heidelberg University.
+
