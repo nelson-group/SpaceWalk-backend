@@ -45,3 +45,7 @@ npm run start
 
 Originally writted by Nicolas Bender, Marc Burg, and Jonannes Maul as part of a research project at Heidelberg University.
 
+Supervised by Dylan Nelson and Filip Sadlo.
+
+The write-up of the project is available as a PDF in this repository.
+
